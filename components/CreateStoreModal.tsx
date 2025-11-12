@@ -181,7 +181,7 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-[95vw] max-w-5xl max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900">Create New Store</h2>
@@ -197,14 +197,14 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-700 text-sm font-medium">{error}</p>
             </div>
           )}
           {/* Two-column responsive layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left column: basic store info */}
             <div className="space-y-4">
               {/* Store Name */}
