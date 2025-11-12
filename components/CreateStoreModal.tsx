@@ -3,6 +3,7 @@ import { Store, BusinessType } from '../types';
 import { storeService } from '../services/storeService';
 import { createOwnerForStore } from '../services/localAuth';
 import { PH_PROVINCES } from '../src/data/philippinesLocations';
+import { FREE_PLAN, PREMIUM_PLAN, seedForPlan, setModule } from '@/services/moduleService';
 
 interface CreateStoreModalProps {
   onClose: () => void;
@@ -12,6 +13,8 @@ interface CreateStoreModalProps {
 export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStoreModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [plan, setPlan] = useState<'Free'|'Premium'>('Free');
+  const [modules, setModules] = useState<Record<string, boolean>>({ ...FREE_PLAN });
   const [formData, setFormData] = useState({
     name: '',
     owner: '',
@@ -162,6 +165,11 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
       });
       try {
         await storeService.updateStore(savedStore.id, { managerId: ownerUser.id });
+      } catch {}
+      try {
+        await seedForPlan(savedStore.id, plan === 'Premium' ? 'premium' : 'free');
+        const entries = Object.entries(modules);
+        await Promise.all(entries.map(([name, enabled]) => setModule(savedStore.id, name as any, !!enabled)));
       } catch {}
       onStoreCreated(savedStore);
     } catch (err) {
@@ -401,6 +409,25 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
               </button>
             </div>
             <p className="mt-1 text-xs text-slate-500">Share this with the owner for future access. Store logins are currently disabled.</p>
+          </div>
+
+          {/* Plan + Modules selection */}
+          <div className="p-3 border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-slate-700">Modules for customer</div>
+              <div className="flex items-center gap-2">
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Free'?'bg-slate-800 text-white':'bg-slate-100'}`} onClick={() => { setPlan('Free'); setModules({ ...FREE_PLAN }); }}>Seed Free</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Premium'?'bg-amber-500 text-white':'bg-amber-100'}`} onClick={() => { setPlan('Premium'); setModules({ ...PREMIUM_PLAN }); }}>Seed Premium</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {Object.keys({ ...FREE_PLAN, ...PREMIUM_PLAN }).map((key) => (
+                <label key={key} className="flex items-center gap-2">
+                  <input type="checkbox" checked={!!modules[key]} onChange={(e)=> setModules(prev => ({ ...prev, [key]: e.target.checked }))} />
+                  <span className="capitalize">{key.replace('_',' ')}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Buttons */}

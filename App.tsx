@@ -528,6 +528,15 @@ const App: React.FC = () => {
             </div>
           );
         }
+        return <AdminDashboard />;
+      case '#/admin-modules':
+        if (!currentUser || currentUser.role !== 'super_admin') {
+          return (
+            <div className="flex items-center justify-center h-full">
+              <SuperAdminLogin onSuccess={() => { setCurrentUser(getLocalUser()); window.location.hash = '#/admin-modules'; }} />
+            </div>
+          );
+        }
         return <StoreModulesAdmin storeId={currentStoreId || ''} />;
       case '#/appointments':
         return <AppointmentsPage />;

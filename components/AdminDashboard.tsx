@@ -117,6 +117,13 @@ export default function AdminDashboard() {
               <p className="text-slate-600 mt-1">Manage all stores and locations</p>
             </div>
             <div className="flex items-center gap-3">
+              <a
+                href="#/admin-modules"
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition font-medium"
+                title="Manage enabled modules for stores"
+              >
+                Modules
+              </a>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2"
