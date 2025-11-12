@@ -4,7 +4,7 @@ export type ModuleName =
   | "pos" | "inventory" | "reports" | "staff"
   | "appointments" | "commissions" | "clients"
   | "tips" | "multi_branch" | "export" | "reminders"
-  | "loyalty";
+  | "loyalty" | "tickets";
 
 export async function getEnabledModules(storeId: string) {
   const { data, error } = await supabase
@@ -15,4 +15,3 @@ export async function getEnabledModules(storeId: string) {
   if (error) throw error;
   return Object.fromEntries((data ?? []).map(m => [m.module_name, m.is_enabled])) as Record<ModuleName, boolean>;
 }
-

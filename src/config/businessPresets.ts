@@ -1,11 +1,12 @@
 import type { BusinessType, FeatureFlags } from '../../types';
 
-// Default feature presets per business type.
+// Default feature presets per business type (behavioral flags only).
+// Tickets is now a full module; keep only vertical behaviors here.
 export const BUSINESS_PRESETS: Record<BusinessType, FeatureFlags> = {
-  SALON:      { enableAppointments: true, enableTickets: true },
+  RESTAURANT: { enableTables: true },
+  SALON:      { enableAppointments: true },
+  LAUNDRY:    {},
   SARI_SARI:  { enableUtangLedger: true },
-  RESTAURANT: { enableTables: true, enableTickets: true },
-  LAUNDRY:    { enableTickets: true },
   PHARMACY:   { enableExpiryAlerts: true },
+  RETAIL:     {},
 };
-

@@ -25,6 +25,7 @@ import { staffService } from './services/staffService';
 import { getCurrentUser as getLocalUser, logout as localLogout } from './services/localAuth';
 import { getModules, FREE_PLAN, type ModuleMap } from '@/services/moduleService';
 import AppointmentsPage from '@/pages/Appointments';
+import TicketsPage from '@/pages/Tickets';
 import TipsPage from '@/pages/Tips';
 import ClientsPage from '@/pages/Clients';
 import CommissionsPage from '@/pages/Commissions';
@@ -473,7 +474,7 @@ const App: React.FC = () => {
                 {currentStore?.features?.enableAppointments && (
                   <button onClick={() => setShowAppointments(true)} className="px-2 py-1 text-xs rounded-md bg-fuchsia-100 text-fuchsia-700">Appointments</button>
                 )}
-                {currentStore?.features?.enableTickets && (
+                {(modules['tickets'] || currentStore?.features?.enableTickets) && (
                   <button onClick={() => setShowTickets(true)} className="px-2 py-1 text-xs rounded-md bg-amber-100 text-amber-700">Tickets</button>
                 )}
                 {currentStore?.features?.enableUtangLedger && (
@@ -539,6 +540,8 @@ const App: React.FC = () => {
         return <StoreModulesAdmin storeId={currentStoreId || ''} />;
       case '#/appointments':
         return <AppointmentsPage />;
+      case '#/tickets':
+        return <TicketsPage />;
       case '#/tips':
         return <TipsPage />;
       case '#/clients':

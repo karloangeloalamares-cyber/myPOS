@@ -12,7 +12,8 @@ export type BusinessType =
   | 'SARI_SARI'
   | 'RESTAURANT'
   | 'LAUNDRY'
-  | 'PHARMACY';
+  | 'PHARMACY'
+  | 'RETAIL';
 
 // Feature flags per business vertical (all optional to keep backward-compat)
 export interface FeatureFlags {

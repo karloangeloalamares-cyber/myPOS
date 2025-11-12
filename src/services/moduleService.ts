@@ -6,7 +6,7 @@ export type ModuleMap = Record<ModuleName, boolean>;
 const ALL_MODULES: ModuleName[] = [
   'pos','inventory','reports','staff',
   'appointments','commissions','clients','tips',
-  'multi_branch','export','reminders','loyalty'
+  'multi_branch','export','reminders','loyalty','tickets'
 ];
 
 export const FREE_PLAN: ModuleMap = {
@@ -22,6 +22,7 @@ export const FREE_PLAN: ModuleMap = {
   export: false,
   reminders: false,
   loyalty: false,
+  tickets: false,
 };
 
 export const PREMIUM_PLAN: ModuleMap = {
@@ -33,6 +34,7 @@ export const PREMIUM_PLAN: ModuleMap = {
   multi_branch: true,
   export: true,
   reminders: true,
+  tickets: true,
 };
 
 function hasSupabaseEnv() {

@@ -4,6 +4,7 @@ import { storeService } from '../services/storeService';
 import { createOwnerForStore } from '../services/localAuth';
 import { PH_PROVINCES } from '../src/data/philippinesLocations';
 import { FREE_PLAN, PREMIUM_PLAN, seedForPlan, setModule } from '@/services/moduleService';
+import { BUSINESS_MODULE_PRESETS } from '@/config/businessModulePresets';
 
 interface CreateStoreModalProps {
   onClose: () => void;
@@ -168,7 +169,10 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
       } catch {}
       try {
         await seedForPlan(savedStore.id, plan === 'Premium' ? 'premium' : 'free');
-        const entries = Object.entries(modules);
+        const vertical = (BUSINESS_MODULE_PRESETS as any)[formData.businessType] || [];
+        const merged: Record<string, boolean> = { ...(modules as any) };
+        (vertical as string[]).forEach((m: string) => { merged[m] = true; });
+        const entries = Object.entries(merged);
         await Promise.all(entries.map(([name, enabled]) => setModule(savedStore.id, name as any, !!enabled)));
       } catch {}
       onStoreCreated(savedStore);
@@ -416,8 +420,8 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-slate-700">Modules for customer</div>
               <div className="flex items-center gap-2">
-                <button type="button" className={`px-2 py-1 rounded ${plan==='Free'?'bg-slate-800 text-white':'bg-slate-100'}`} onClick={() => { setPlan('Free'); setModules({ ...FREE_PLAN }); }}>Seed Free</button>
-                <button type="button" className={`px-2 py-1 rounded ${plan==='Premium'?'bg-amber-500 text-white':'bg-amber-100'}`} onClick={() => { setPlan('Premium'); setModules({ ...PREMIUM_PLAN }); }}>Seed Premium</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Free'?'bg-slate-800 text-white':'bg-slate-100'}`} onClick={() => { setPlan('Free'); const base:any = { ...FREE_PLAN }; (BUSINESS_MODULE_PRESETS[formData.businessType]||[]).forEach((m:string)=> base[m]=true); setModules(base); }}>Seed Free</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Premium'?'bg-amber-500 text-white':'bg-amber-100'}`} onClick={() => { setPlan('Premium'); const base:any = { ...PREMIUM_PLAN }; (BUSINESS_MODULE_PRESETS[formData.businessType]||[]).forEach((m:string)=> base[m]=true); setModules(base); }}>Seed Premium</button>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
