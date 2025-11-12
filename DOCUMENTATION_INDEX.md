@@ -54,7 +54,7 @@ components/
 
 ### Updated Files (2)
 ```
-├── Navigation.tsx           Added Admin link
+├── Modal Main Menu          Replaces top navigation
 └── App.tsx                  Added #/admin route
 ```
 

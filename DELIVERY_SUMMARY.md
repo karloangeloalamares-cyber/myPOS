@@ -8,7 +8,7 @@
 3. **EditStoreModal.tsx** - Full-featured edit form for store configuration
 
 ### ✅ Integration Updates
-- **Navigation.tsx** - Added "Admin" link (visible only for super_admin role)
+- Top navigation removed; switched to modal main menu
 - **App.tsx** - Added `#/admin` route that renders AdminDashboard
 
 ### ✅ Comprehensive Documentation
@@ -133,7 +133,7 @@ location.reload();
 ### Component Architecture
 ```
 App.tsx
-├── Navigation.tsx (Admin link added)
+├── (Navigation removed)
 └── AdminDashboard.tsx (Route #/admin)
     ├── CreateStoreModal.tsx (Create form)
     └── EditStoreModal.tsx (Edit form)
@@ -359,7 +359,7 @@ micro-pos-with-smart-inventory/
 │   ├── AdminDashboard.tsx          ← NEW
 │   ├── CreateStoreModal.tsx        ← NEW
 │   ├── EditStoreModal.tsx          ← NEW
-│   └── Navigation.tsx              ← UPDATED
+│   └── (Navigation removed)
 ├── services/
 │   └── storeService.ts             ← Uses this service
 ├── App.tsx                         ← UPDATED

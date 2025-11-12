@@ -62,7 +62,7 @@
 
 ```
 ┌────────────────────────────────────────┐
-│ Navigation.tsx                         │
+│ (Top navigation removed; using modal)  │
 ├────────────────────────────────────────┤
 │ ⚡ Added "Admin" link                  │
 │ ⚡ Conditional visibility              │
@@ -174,7 +174,7 @@ micro-pos-with-smart-inventory/
 │   ├── AdminDashboard.tsx          ✨ NEW
 │   ├── CreateStoreModal.tsx        ✨ NEW
 │   ├── EditStoreModal.tsx          ✨ NEW
-│   ├── Navigation.tsx              ⚡ UPDATED
+│   ├── (Navigation removed)
 │   └── [other components...]
 │
 ├── services/

@@ -23,7 +23,7 @@ PHASE 1: INITIALIZATION
 │ 1. Open http://localhost:3001                                  │
 │    └─ Expected: App loads, Main Branch auto-created           │
 │       ✅ No blank page
-│       ✅ Navigation visible
+│       ✅ Main menu modal available
 │       ✅ No console errors
 └────────────────────────────────────────────────────────────────┘
                               ↓
@@ -137,7 +137,7 @@ PHASE 7: VERIFICATION
 
 ## Quick Reference Buttons
 
-### Navigation (Hash URLs)
+### Main Menu (Modal)
 
 ```
 HOME          #/
@@ -164,7 +164,7 @@ Admin:           [Create Store] [Edit] [Delete] [Grid of stores]
 - [ ] Open http://localhost:3001
 - [ ] App loads without errors
 - [ ] Main Branch created automatically
-- [ ] Navigation menu visible
+- [ ] Main menu modal opens
 - [ ] No blank pages
 
 ### Phase 2: Store Management ⭐
@@ -354,7 +354,7 @@ When you see ALL of these, testing is complete:
 ✅ CSV export respects store filter
 ✅ No console errors
 ✅ Dark/light mode works
-✅ Navigation smooth and fast
+✅ Main menu modal flows smoothly
 ✅ All buttons responsive
 
 ---

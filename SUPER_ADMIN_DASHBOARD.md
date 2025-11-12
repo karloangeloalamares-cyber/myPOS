@@ -138,12 +138,8 @@ USD, PHP, EUR, GBP, JPY, CNY, AUD, CAD, SGD, HKD
 
 ## Integration Points
 
-### 1. **Navigation.tsx** (Updated)
-**Changes**:
-- Added conditional Admin link visibility
-- Admin link only shows when `userRole === 'super_admin'`
-- Admin link opens `#/admin` route
-- Uses settings icon for visual distinction
+### 1. Main Menu (Modal)
+The former top navigation has been removed. Access Admin via Super Admin login and use the modal main menu for navigating.
 
 ```typescript
 const isSuperAdmin = localStorage.getItem('userRole') === 'super_admin';
@@ -421,7 +417,7 @@ All methods include:
 | components/AdminDashboard.tsx | Component | ~280 | Main admin dashboard |
 | components/CreateStoreModal.tsx | Component | ~220 | Create store form |
 | components/EditStoreModal.tsx | Component | ~280 | Edit store form |
-| components/Navigation.tsx | Updated | - | Added admin link |
+| Modal Main Menu | New UX | - | Replaces top navigation |
 | App.tsx | Updated | - | Added admin route |
 | ADMIN_SETUP.md | Documentation | - | Setup guide |
 | SUPER_ADMIN_DASHBOARD.md | Documentation | - | This file |

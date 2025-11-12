@@ -25,7 +25,7 @@
 
 ### What to Look For:
 - ✅ No blank page or errors
-- ✅ Navigation menu appears
+- ✅ Main menu modal opens
 - ✅ Store name visible in header
 - ✅ No console errors related to store initialization
 

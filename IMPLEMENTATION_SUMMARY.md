@@ -378,7 +378,7 @@ interface Expense {
 8. Reports aggregation (All Stores)
 9. CSV export respecting store filter
 10. Dark mode throughout
-11. Navigation between all pages
+11. Modal main menu replaces navigation bar
 12. Error handling and fallbacks
 
 ### ✅ Edge Cases Covered

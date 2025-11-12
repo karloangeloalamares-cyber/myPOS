@@ -16,7 +16,7 @@ components/
 
 ### 2 Updated Components
 ```
-├── Navigation.tsx          ⚡ Added Admin link (super_admin only)
+├── Modal Main Menu         Replaces top navigation
 App.tsx                     ⚡ Added #/admin route
 ```
 
@@ -335,7 +335,7 @@ console.log(localStorage.getItem('userRole'));
 - **EditStoreModal.tsx** - Edit form (280 lines)
 
 ### Updated Files
-- **Navigation.tsx** - Added Admin link
+- Top navigation removed; modal main menu used instead
 - **App.tsx** - Added admin route
 
 ### Services Used

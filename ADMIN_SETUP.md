@@ -94,7 +94,9 @@ components/
   - Toggle active/inactive status
   - Read-only store code display
 
-## Navigation Integration
+## Modal Main Menu
+
+Note: The top navigation bar has been removed. The app now uses a modal main menu for primary navigation.
 
 The "Admin" link appears in the navigation only when:
 - User role is set to 'super_admin' in localStorage
