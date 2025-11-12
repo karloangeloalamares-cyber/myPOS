@@ -149,7 +149,7 @@ export interface Product {
   isCommissionable?: boolean;
   commissionRate?: number | null; // decimal form, e.g., 0.35 for 35%
   // Unified item support
-  itemType?: 'product' | 'service' | 'menu' | 'ingredient';
+  itemType?: 'product' | 'service' | 'menu' | 'ingredient' | 'consumable';
   taxable?: boolean;
   // Service
   durationMinutes?: number;

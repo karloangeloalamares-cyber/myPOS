@@ -24,7 +24,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<'all' | 'in-stock' | 'low-stock' | 'out-of-stock'>('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service' | 'menu' | 'ingredient'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service' | 'menu' | 'ingredient' | 'consumable'>('all');
   const [enabledStatus, setEnabledStatus] = useState<{ [key: string]: boolean }>(() => {
     const stored = localStorage.getItem('product_enabled_status');
     return stored ? JSON.parse(stored) : {};
@@ -199,6 +199,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
             <option value="service">Service</option>
             <option value="menu">Menu</option>
             <option value="ingredient">Ingredient</option>
+            <option value="consumable">Consumable</option>
           </select>
         </div>
       </div>
