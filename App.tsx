@@ -356,10 +356,8 @@ const App: React.FC = () => {
         const newProducts = [...prevProducts];
         cart.forEach(cartItem => {
             const itemType = (cartItem as any).itemType || 'product';
-            if (itemType === 'service') {
-              // no stock change for services
-              return;
-            }
+
+            // 1) Menu: decrement bundle children
             if (itemType === 'menu' && Array.isArray((cartItem as any).bundleItems)) {
               const children = (cartItem as any).bundleItems as { itemId: string; qty: number }[];
               children.forEach(child => {
@@ -368,11 +366,25 @@ const App: React.FC = () => {
                   newProducts[idx].stock -= (child.qty || 1) * cartItem.quantity;
                 }
               });
-              return;
             }
-            const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
-            if(productIndex > -1 && newProducts[productIndex].stock !== Infinity) {
-                newProducts[productIndex].stock -= cartItem.quantity;
+
+            // 2) Own stock: only products/ingredients/consumables decrement themselves
+            if (itemType !== 'service') {
+              const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
+              if(productIndex > -1 && newProducts[productIndex].stock !== Infinity) {
+                  newProducts[productIndex].stock -= cartItem.quantity;
+              }
+            }
+
+            // 3) Consumed items: for product/service/menu, decrement linked ingredients/consumables
+            const consumed = (cartItem as any).consumedItems as { itemId: string; qty: number }[] | undefined;
+            if (Array.isArray(consumed)) {
+              consumed.forEach(child => {
+                const idx = newProducts.findIndex(p => p.id === child.itemId);
+                if (idx > -1 && newProducts[idx].stock !== Infinity) {
+                  newProducts[idx].stock -= (child.qty || 1) * cartItem.quantity;
+                }
+              });
             }
         });
         return newProducts;

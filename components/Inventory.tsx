@@ -319,7 +319,15 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
         </div>
       </div>
       
-      {isModalOpen && <ProductModal productToEdit={productToEdit} onClose={handleCloseModal} onSave={handleSaveProduct} hideCategory={!!hideCategory} />}
+      {isModalOpen && (
+        <ProductModal
+          productToEdit={productToEdit}
+          onClose={handleCloseModal}
+          onSave={handleSaveProduct}
+          hideCategory={!!hideCategory}
+          allProducts={products}
+        />
+      )}
     </div>
   );
 };

@@ -157,6 +157,8 @@ export interface Product {
   // Menu bundles
   bundleItems?: { itemId: string; qty: number }[];
   printName?: string;
+  // Items consumed when this item is sold (for product/service/menu)
+  consumedItems?: { itemId: string; qty: number }[];
   // Ingredient
   uom?: string; // e.g., g/ml/pcs
   defaultCost?: number;

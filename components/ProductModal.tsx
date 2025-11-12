@@ -7,9 +7,10 @@ interface ProductModalProps {
   onClose: () => void;
   onSave: (product: Omit<Product, 'id'> | Product) => void;
   hideCategory?: boolean;
+  allProducts?: Product[];
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ productToEdit, onClose, onSave, hideCategory = false }) => {
+const ProductModal: React.FC<ProductModalProps> = ({ productToEdit, onClose, onSave, hideCategory = false, allProducts = [] }) => {
   const [product, setProduct] = useState({
     name: '',
     price: 0,
@@ -77,6 +78,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ productToEdit, onClose, onS
   const itemType = (product as any).itemType || 'product';
   const isService = itemType === 'service';
   const isUnlimited = isService || product.stock === Infinity;
+  const consumableOptions = Array.isArray(allProducts)
+    ? allProducts.filter((p: any) => (p as any).itemType === 'ingredient' || (p as any).itemType === 'consumable')
+    : [];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -177,6 +181,59 @@ const ProductModal: React.FC<ProductModalProps> = ({ productToEdit, onClose, onS
               <textarea id="description" name="description" rows={4} value={product.description} onChange={handleChange}
                 className="mt-1 block w-full rounded-lg border-2 border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 p-3" />
             </div>
+
+            {/* Consumed/Bundle Items Editor */}
+            {(itemType === 'product' || itemType === 'service' || itemType === 'menu') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{itemType === 'menu' ? 'Bundle Items' : 'Consumed Ingredients/Consumables'}</label>
+                <div className="space-y-2">
+                  {(((product as any)[itemType === 'menu' ? 'bundleItems' : 'consumedItems']) || []).map((row: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select
+                        value={row.itemId}
+                        onChange={(e)=>{
+                          const arrKey = itemType === 'menu' ? 'bundleItems' : 'consumedItems';
+                          const val = e.target.value;
+                          setProduct((prev:any)=>{
+                            const arr = [...(prev[arrKey] || [])];
+                            arr[idx] = { ...arr[idx], itemId: val };
+                            return { ...prev, [arrKey]: arr };
+                          });
+                        }}
+                        className="w-full md:w-2/3 h-11 rounded-lg border-2 border-slate-300 px-3 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                        <option value="">Select item…</option>
+                        {consumableOptions.map(opt => (
+                          <option key={opt.id} value={opt.id}>{opt.name}</option>
+                        ))}
+                      </select>
+                      <input type="number" min="0" step="0.01" value={row.qty || 1}
+                        onChange={(e)=>{
+                          const arrKey = itemType === 'menu' ? 'bundleItems' : 'consumedItems';
+                          const val = parseFloat(e.target.value) || 0;
+                          setProduct((prev:any)=>{
+                            const arr = [...(prev[arrKey] || [])];
+                            arr[idx] = { ...arr[idx], qty: val };
+                            return { ...prev, [arrKey]: arr };
+                          });
+                        }}
+                        className="w-28 h-11 rounded-lg border-2 border-slate-300 px-3 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" />
+                      <button type="button" onClick={()=>{
+                        const arrKey = itemType === 'menu' ? 'bundleItems' : 'consumedItems';
+                        setProduct((prev:any)=>{
+                          const arr = [...(prev[arrKey] || [])];
+                          arr.splice(idx,1);
+                          return { ...prev, [arrKey]: arr };
+                        });
+                      }} className="px-2 py-2 text-sm rounded border border-slate-300 hover:bg-slate-50 dark:border-slate-600">Remove</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={()=>{
+                    const arrKey = itemType === 'menu' ? 'bundleItems' : 'consumedItems';
+                    setProduct((prev:any)=>({ ...prev, [arrKey]: [ ...(prev as any)[arrKey] || [], { itemId: '', qty: 1 } ] }));
+                  }} className="px-3 py-2 rounded bg-slate-100 hover:bg-slate-200 text-sm dark:bg-slate-700 dark:hover:bg-slate-600">Add {itemType === 'menu' ? 'Bundle Item' : 'Consumed Item'}</button>
+                </div>
+              </div>
+            )}
 
             {/* Commission */}
             <div className="space-y-2 border-t border-slate-200 pt-4">
