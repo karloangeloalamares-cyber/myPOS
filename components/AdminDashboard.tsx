@@ -13,7 +13,6 @@ export default function AdminDashboard() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [newBusinessType, setNewBusinessType] = useState<BusinessType>('RESTAURANT');
 
   useEffect(() => {
     loadStores();
@@ -37,8 +36,8 @@ export default function AdminDashboard() {
     if (!newStore.businessType) {
       try {
         storeToUse = await storeService.updateStore(newStore.id, {
-          businessType: newBusinessType,
-          features: BUSINESS_PRESETS[newBusinessType],
+          businessType: 'RESTAURANT',
+          features: BUSINESS_PRESETS.RESTAURANT,
         });
       } catch (e) {
         // swallow and still proceed
@@ -93,18 +92,6 @@ export default function AdminDashboard() {
               <p className="text-slate-600 mt-1">Manage all stores and locations</p>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-600">Business Type</label>
-              <select
-                className="px-2 py-2 border rounded-md text-sm border-slate-300"
-                value={newBusinessType}
-                onChange={(e) => setNewBusinessType(e.target.value as BusinessType)}
-              >
-                <option value="RESTAURANT">Restaurant</option>
-                <option value="SALON">Salon</option>
-                <option value="SARI_SARI">Sari-Sari</option>
-                <option value="LAUNDRY">Laundry</option>
-                <option value="PHARMACY">Pharmacy</option>
-              </select>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2"
