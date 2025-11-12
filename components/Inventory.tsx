@@ -284,7 +284,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
                                <img src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover rounded-md" />
                                <span>{product.name}</span>
                                <span className="text-xs px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 ml-2">
-                                 {((product as any).itemType||'product') === 'product' ? '🛍️ Product' : ((product as any).itemType) === 'service' ? '💇 Service' : ((product as any).itemType) === 'menu' ? '🍱 Menu' : '🧂 Ingredient'}
+                                 {((product as any).itemType||'product') === 'product' ? '🛍️ Product' : ((product as any).itemType) === 'service' ? '💇 Service' : ((product as any).itemType) === 'menu' ? '🍱 Menu' : ((product as any).itemType) === 'consumable' ? '🧴 Consumable' : '🧂 Ingredient'}
                                </span>
                           </div>
                       </th>
