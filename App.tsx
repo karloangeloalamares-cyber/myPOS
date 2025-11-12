@@ -9,6 +9,7 @@ import Inventory from './components/Inventory';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
 import AdminDashboard from './components/AdminDashboard';
+import StoreModulesAdmin from '@/pages/admin/StoreModules';
 import SuperAdminLogin from './components/SuperAdminLogin';
 import StoreLogin from './components/StoreLogin';
 import LoginHub from './components/LoginHub';
@@ -527,7 +528,7 @@ const App: React.FC = () => {
             </div>
           );
         }
-        return <AdminDashboard />;
+        return <StoreModulesAdmin storeId={currentStoreId || ''} />;
       case '#/appointments':
         return <AppointmentsPage />;
       case '#/tips':
