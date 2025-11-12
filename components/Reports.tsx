@@ -166,7 +166,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, expenses, onAddExpense,
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto w-full px-4 lg:px-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
