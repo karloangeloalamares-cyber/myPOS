@@ -5,6 +5,7 @@ import CreateStoreModal from './CreateStoreModal';
 import EditStoreModal from './EditStoreModal';
 import { BUSINESS_PRESETS } from '../src/config/businessPresets';
 import StaffManagement from './StaffManagement';
+import { FREE_PLAN, PREMIUM_PLAN, getModules, setModule, seedForPlan } from '@/services/moduleService';
 
 export default function AdminDashboard() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -13,6 +14,8 @@ export default function AdminDashboard() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedStoreForModules, setSelectedStoreForModules] = useState<string>('');
+  const [modules, setModules] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadStores();
@@ -70,6 +73,28 @@ export default function AdminDashboard() {
     setShowEditModal(true);
   };
 
+  // Load modules for first store by default
+  useEffect(() => {
+    if (stores.length > 0 && !selectedStoreForModules) {
+      const sid = stores[0].id;
+      setSelectedStoreForModules(sid);
+      getModules(sid).then(setModules).catch(() => setModules(FREE_PLAN));
+    }
+  }, [stores, selectedStoreForModules]);
+
+  async function handleStoreChangeForModules(sid: string) {
+    setSelectedStoreForModules(sid);
+    const map = await getModules(sid);
+    setModules(map);
+  }
+
+  async function handlePlanSeed(plan: 'free' | 'premium') {
+    if (!selectedStoreForModules) return;
+    await seedForPlan(selectedStoreForModules, plan);
+    const map = await getModules(selectedStoreForModules);
+    setModules(map);
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -126,6 +151,38 @@ export default function AdminDashboard() {
           <StaffManagement stores={stores} />
         ) : (
           <>
+            <div className="bg-white rounded-lg shadow p-4 mb-6 border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">Modules for store</span>
+                  <select
+                    className="px-2 py-1 border rounded-md text-sm"
+                    value={selectedStoreForModules}
+                    onChange={(e)=>handleStoreChangeForModules(e.target.value)}
+                  >
+                    {stores.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="px-3 py-1 text-sm bg-slate-100 rounded" onClick={()=>handlePlanSeed('free')}>Seed Free</button>
+                  <button className="px-3 py-1 text-sm bg-amber-100 rounded" onClick={()=>handlePlanSeed('premium')}>Seed Premium</button>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-2">
+                {Object.entries({ ...FREE_PLAN, ...modules }).map(([name, enabled]) => (
+                  <label key={name} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={!!enabled} onChange={async (e)=>{
+                      if (!selectedStoreForModules) return;
+                      await setModule(selectedStoreForModules, name as any, e.target.checked);
+                      setModules(prev => ({...prev, [name]: e.target.checked}));
+                    }} />
+                    <span className="capitalize">{name.replace('_',' ')}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-600">
             <p className="text-slate-600 text-sm font-medium">Total Stores</p>

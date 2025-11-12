@@ -3,6 +3,7 @@ import { TerminalIcon, BoxIcon, ChartBarIcon, CogIcon } from './icons';
 
 interface NavigationProps {
   currentPath: string;
+  modules?: Partial<Record<string, boolean>>;
 }
 
 const NavLink: React.FC<{
@@ -25,7 +26,7 @@ const NavLink: React.FC<{
   );
 };
 
-const Navigation: React.FC<NavigationProps> = ({ currentPath }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentPath, modules = {} }) => {
   // Check if user is super admin using persisted role from local auth
   const userRole = localStorage.getItem('userRole') || 'cashier';
   const isSuperAdmin = userRole === 'super_admin';
@@ -64,6 +65,24 @@ const Navigation: React.FC<NavigationProps> = ({ currentPath }) => {
             isActive={currentPath === '#/reports'}
             href="#/reports"
           />
+          {modules['appointments'] && (
+            <NavLink label="Appointments" icon={<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M4 11h16M5 19h14a2 2 0 002-2v-8H3v8a2 2 0 002 2z"/></svg>} isActive={currentPath === '#/appointments'} href="#/appointments" />
+          )}
+          {modules['commissions'] && (
+            <NavLink label="Commissions" icon={<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 11V3a1 1 0 012 0v8h8a1 1 0 010 2h-8v8a1 1 0 01-2 0v-8H3a1 1 0 110-2h8z"/></svg>} isActive={currentPath === '#/commissions'} href="#/commissions" />
+          )}
+          {modules['clients'] && (
+            <NavLink label="Clients" icon={<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-6a4 4 0 11-8 0 4 4 0 018 0m10 0a4 4 0 11-8 0 4 4 0 018 0"/></svg>} isActive={currentPath === '#/clients'} href="#/clients" />
+          )}
+          {modules['tips'] && (
+            <NavLink label="Tips" icon={<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-7 8h8a2 2 0 002-2v-3a7 7 0 10-12 0v3a2 2 0 002 2z"/></svg>} isActive={currentPath === '#/tips'} href="#/tips" />
+          )}
+          {modules['export'] && (
+            <NavLink label="Export" icon={<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v16h16M12 8v8m0 0l-3-3m3 3l3-3"/></svg>} isActive={currentPath === '#/export'} href="#/export" />
+          )}
+          {modules['reminders'] && (
+            <NavLink label="Reminders" icon={<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>} isActive={currentPath === '#/reminders'} href="#/reminders" />
+          )}
           <NavLink
             label="Settings"
             icon={<CogIcon className="h-5 w-5" />}

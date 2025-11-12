@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Header from './components/Header';
+import Navigation from './components/Navigation';
 import ProductList from './components/ProductList';
 import Cart from './components/Cart';
 import CategoryTabs from './components/CategoryTabs';
@@ -22,6 +23,14 @@ import { storeService } from './services/storeService';
 import { productService } from './services/productService';
 import { staffService } from './services/staffService';
 import { getCurrentUser as getLocalUser, logout as localLogout } from './services/localAuth';
+import { getModules, FREE_PLAN, type ModuleMap } from '@/services/moduleService';
+import AppointmentsPage from '@/pages/Appointments';
+import TipsPage from '@/pages/Tips';
+import ClientsPage from '@/pages/Clients';
+import CommissionsPage from '@/pages/Commissions';
+import ExportPage from '@/pages/Export';
+import RemindersPage from '@/pages/Reminders';
+import MultiBranchPage from '@/pages/MultiBranch';
 import AppointmentsModal from './components/AppointmentsModal';
 import TicketsModal from './components/TicketsModal';
 import UtangLedgerModal from './components/UtangLedgerModal';
@@ -109,6 +118,7 @@ const App: React.FC = () => {
   const [showAppointments, setShowAppointments] = useState(false);
   const [showTickets, setShowTickets] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
+  const [modules, setModules] = useState<ModuleMap>(FREE_PLAN);
   
 
   useEffect(() => {
@@ -131,6 +141,12 @@ const App: React.FC = () => {
       setCurrentStoreId(user.storeId);
     }
   }, []);
+
+  // Load enabled modules when store changes
+  useEffect(() => {
+    if (!currentStoreId) return;
+    getModules(currentStoreId).then(setModules).catch(() => setModules(FREE_PLAN));
+  }, [currentStoreId]);
 
   // Load staff list once
   useEffect(() => {
@@ -512,6 +528,20 @@ const App: React.FC = () => {
           );
         }
         return <AdminDashboard />;
+      case '#/appointments':
+        return <AppointmentsPage />;
+      case '#/tips':
+        return <TipsPage />;
+      case '#/clients':
+        return <ClientsPage />;
+      case '#/commissions':
+        return <CommissionsPage />;
+      case '#/export':
+        return <ExportPage />;
+      case '#/reminders':
+        return <RemindersPage />;
+      case '#/multi-branch':
+        return <MultiBranchPage />;
       case '#/inventory':
         if (!currentStoreId) {
           return (
@@ -581,6 +611,7 @@ const App: React.FC = () => {
         currentUser={currentUser}
         onLogout={handleLogout}
       />
+      <Navigation currentPath={route} modules={modules} />
       <main className="flex-grow w-full p-4 lg:p-6 overflow-hidden">
         {renderPage()}
       </main>
