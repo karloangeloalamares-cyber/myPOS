@@ -15,14 +15,16 @@ interface InventoryProps {
   onDeleteProduct: (productId: string) => void;
   onDeleteMultipleProducts: (productIds: string[]) => void;
   lowStockThreshold: number;
+  hideCategory?: boolean;
 }
 
-const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateProduct, onDeleteProduct, onDeleteMultipleProducts, lowStockThreshold }) => {
+const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateProduct, onDeleteProduct, onDeleteMultipleProducts, lowStockThreshold, hideCategory }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<'all' | 'in-stock' | 'low-stock' | 'out-of-stock'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service' | 'menu' | 'ingredient'>('all');
   const [enabledStatus, setEnabledStatus] = useState<{ [key: string]: boolean }>(() => {
     const stored = localStorage.getItem('product_enabled_status');
     return stored ? JSON.parse(stored) : {};
@@ -40,6 +42,8 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const categoryMatch = selectedCategory === 'All' || product.category === selectedCategory;
+      const t = (product as any).itemType || 'product';
+      const typeMatch = typeFilter === 'all' || t === typeFilter;
       const isOutOfStock = product.stock <= 0;
       const isLowStock = product.stock > 0 && product.stock <= lowStockThreshold && product.stock !== Infinity;
       
@@ -58,9 +62,9 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
           statusMatch = true;
       }
       
-      return categoryMatch && statusMatch;
+      return categoryMatch && statusMatch && typeMatch;
     });
-  }, [products, selectedCategory, statusFilter, lowStockThreshold]);
+  }, [products, selectedCategory, statusFilter, typeFilter, lowStockThreshold]);
 
   const allSelected = filteredProducts.length > 0 && filteredProducts.every(p => selectedProducts.includes(p.id));
   const someSelected = filteredProducts.some(p => selectedProducts.includes(p.id)) && !allSelected;
@@ -138,13 +142,13 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
           >
             ← Back
           </button>
-          <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200">Menu Management</h2>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200">Item Management</h2>
         </div>
         <button
           onClick={() => handleOpenModal()}
           className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
         >
-          Add New Menu Item
+          Add New Item
         </button>
       </div>
 
@@ -152,7 +156,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 space-y-4">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filters</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Category Filter */}
           <div>
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Category</label>
@@ -181,6 +185,21 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
               <option value="out-of-stock">Out of Stock</option>
             </select>
           </div>
+        </div>
+        {/* Type Filter */}
+        <div>
+          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Type</label>
+          <select 
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as any)}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="all">All</option>
+            <option value="product">Product</option>
+            <option value="service">Service</option>
+            <option value="menu">Menu</option>
+            <option value="ingredient">Ingredient</option>
+          </select>
         </div>
       </div>
 
@@ -261,8 +280,11 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
                       </td>
                       <th scope="row" className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white">
                           <div className="flex items-center space-x-3">
-                              <img src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover rounded-md" />
-                              <span>{product.name}</span>
+                               <img src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover rounded-md" />
+                               <span>{product.name}</span>
+                               <span className="text-xs px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 ml-2">
+                                 {((product as any).itemType||'product') === 'product' ? '🛍️ Product' : ((product as any).itemType) === 'service' ? '💇 Service' : ((product as any).itemType) === 'menu' ? '🍱 Menu' : '🧂 Ingredient'}
+                               </span>
                           </div>
                       </th>
                       <td className="px-6 py-4">{product.category}</td>
@@ -296,9 +318,10 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
         </div>
       </div>
       
-      {isModalOpen && <ProductModal productToEdit={productToEdit} onClose={handleCloseModal} onSave={handleSaveProduct} />}
+      {isModalOpen && <ProductModal productToEdit={productToEdit} onClose={handleCloseModal} onSave={handleSaveProduct} hideCategory={!!hideCategory} />}
     </div>
   );
 };
 
 export default Inventory;
+

@@ -355,6 +355,21 @@ const App: React.FC = () => {
     setProducts(prevProducts => {
         const newProducts = [...prevProducts];
         cart.forEach(cartItem => {
+            const itemType = (cartItem as any).itemType || 'product';
+            if (itemType === 'service') {
+              // no stock change for services
+              return;
+            }
+            if (itemType === 'menu' && Array.isArray((cartItem as any).bundleItems)) {
+              const children = (cartItem as any).bundleItems as { itemId: string; qty: number }[];
+              children.forEach(child => {
+                const idx = newProducts.findIndex(p => p.id === child.itemId);
+                if (idx > -1 && newProducts[idx].stock !== Infinity) {
+                  newProducts[idx].stock -= (child.qty || 1) * cartItem.quantity;
+                }
+              });
+              return;
+            }
             const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
             if(productIndex > -1 && newProducts[productIndex].stock !== Infinity) {
                 newProducts[productIndex].stock -= cartItem.quantity;
@@ -567,7 +582,7 @@ const App: React.FC = () => {
             </div>
           );
         }
-        return <Inventory products={products} onAddProduct={handleAddProduct} onUpdateProduct={handleUpdateProduct} onDeleteProduct={handleDeleteProduct} onDeleteMultipleProducts={handleDeleteMultipleProducts} lowStockThreshold={settings.lowStockThreshold} />;
+        return <Inventory products={products} onAddProduct={handleAddProduct} onUpdateProduct={handleUpdateProduct} onDeleteProduct={handleDeleteProduct} onDeleteMultipleProducts={handleDeleteMultipleProducts} lowStockThreshold={settings.lowStockThreshold} hideCategory={currentStore?.businessType === 'SALON'} />;
       case '#/reports':
         if (!currentStoreId) {
           return (

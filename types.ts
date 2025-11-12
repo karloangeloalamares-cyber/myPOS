@@ -148,6 +148,23 @@ export interface Product {
   // Optional per-item commission configuration (multi-vertical)
   isCommissionable?: boolean;
   commissionRate?: number | null; // decimal form, e.g., 0.35 for 35%
+  // Unified item support
+  itemType?: 'product' | 'service' | 'menu' | 'ingredient';
+  taxable?: boolean;
+  // Service
+  durationMinutes?: number;
+  assignedRoles?: string[];
+  // Menu bundles
+  bundleItems?: { itemId: string; qty: number }[];
+  printName?: string;
+  // Ingredient
+  uom?: string; // e.g., g/ml/pcs
+  defaultCost?: number;
+  isSellable?: boolean; // if false, price may be unused
+  // Extras
+  lowStockThreshold?: number;
+  expiryDate?: string;
+  supplier?: string;
   createdAt: Date;
   updatedAt: Date;
 }
