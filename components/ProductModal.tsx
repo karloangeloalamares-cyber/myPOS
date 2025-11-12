@@ -256,7 +256,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ productToEdit, onClose, onS
                     value={product.commissionRate ? (product.commissionRate * 100).toString() : ''}
                     onChange={(e) => handleCommissionRateChange(e.target.value)}
                     placeholder="e.g., 5, 10, 35"
-                    className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+                    className="mt-1 block w-full h-11 rounded-lg border-2 border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 px-3"
                   />
                   <p className="text-xs text-slate-500 mt-1">Percentage of this item's sales paid as commission.</p>
                 </div>
