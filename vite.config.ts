@@ -21,10 +21,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     // Removed Gemini env defs when AI feature is disabled
     define: {},
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, './src'),
+        }
       }
-    }
   };
 });
