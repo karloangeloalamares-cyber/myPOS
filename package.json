@@ -8,6 +8,7 @@
                     "start":  "vite preview",
                     "check":  "tsc --noEmit",
                     "build":  "chmod +x ./node_modules/.bin/vite || true && vite build",
+                    "vercel-build": "chmod +x ./node_modules/.bin/vite || true && vite build",
                     "preview":  "vite preview"
                 },
     "dependencies":  {
