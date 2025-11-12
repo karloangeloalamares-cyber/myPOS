@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Header from './components/Header';
-import Navigation from './components/Navigation';
 import ProductList from './components/ProductList';
 import Cart from './components/Cart';
 import CategoryTabs from './components/CategoryTabs';
@@ -621,7 +620,6 @@ const App: React.FC = () => {
         currentUser={currentUser}
         onLogout={handleLogout}
       />
-      <Navigation currentPath={route} modules={modules} />
       <main className="flex-grow w-full p-4 lg:p-6 overflow-hidden">
         {renderPage()}
       </main>
