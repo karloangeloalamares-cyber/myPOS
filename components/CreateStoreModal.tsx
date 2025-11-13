@@ -5,7 +5,6 @@ import { createOwnerForStore } from '../services/localAuth';
 import PhilippineAddressSelector, { AddressValue } from './PhilippineAddressSelector';
 import { FREE_PLAN, PREMIUM_PLAN, seedForPlan, setModule } from '@/services/moduleService';
 import { businessPlans, type PlanKey } from '@/config/businessPlans';
-import { BUSINESS_MODULE_PRESETS } from '@/config/businessModulePresets';
 
 interface CreateStoreModalProps {
   onClose: () => void;
