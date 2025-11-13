@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Store, BusinessType } from '../types';
 import { storeService } from '../services/storeService';
 import { createOwnerForStore } from '../services/localAuth';
-import { PH_PROVINCES } from '../src/data/philippinesLocations';
+import PhilippineAddressSelector, { AddressValue } from './PhilippineAddressSelector';
 import { FREE_PLAN, PREMIUM_PLAN, seedForPlan, setModule } from '@/services/moduleService';
 import { BUSINESS_MODULE_PRESETS } from '@/config/businessModulePresets';
 
@@ -27,21 +27,9 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
     ownerPassword: '',
   });
 
-  // Cascading location state (Province -> City/Municipality -> Barangay)
-  const [provinceCode, setProvinceCode] = useState('');
-  const [cityCode, setCityCode] = useState('');
-  const [barangayCode, setBarangayCode] = useState('');
+  // Address selector state
+  const [address, setAddress] = useState<AddressValue>({});
   const [street, setStreet] = useState('');
-
-  const provinces = PH_PROVINCES;
-  const cities = useMemo(() => {
-    const p = provinces.find(p => p.code === provinceCode);
-    return p ? p.cities : [];
-  }, [provinceCode, provinces]);
-  const barangays = useMemo(() => {
-    const c = cities.find(c => c.code === cityCode);
-    return c ? c.barangays : [];
-  }, [cityCode, cities]);
 
   const timezones = [
     'UTC',
@@ -79,15 +67,15 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
       setError('Owner is required');
       return;
     }
-    if (!provinceCode) {
+    if (!address.province) {
       setError('Province is required');
       return;
     }
-    if (!cityCode) {
+    if (!address.city) {
       setError('City / Municipality is required');
       return;
     }
-    if (!barangayCode) {
+    if (!address.barangay) {
       setError('Barangay is required');
       return;
     }
@@ -112,10 +100,6 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
     setError('');
 
     try {
-      const province = provinces.find(p => p.code === provinceCode);
-      const city = cities.find(c => c.code === cityCode);
-      const barangay = barangays.find(b => b.code === barangayCode);
-
       const newStore: Store = {
         id: `store_${Date.now()}`,
         name: formData.name.trim(),
@@ -129,9 +113,9 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
         contactEmail: formData.contactEmail.trim(),
         addressStructured: {
           street: street.trim(),
-          province: province?.name || '',
-          city: city?.name || '',
-          barangay: barangay?.name || '',
+          province: address.province?.province_name || '',
+          city: address.city?.city_name || '',
+          barangay: address.barangay?.brgy_name || '',
         },
         businessType: formData.businessType,
         enabled: true,
@@ -139,9 +123,9 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
           storeName: formData.name.trim(),
           // Second line of address for display: Barangay, City, Province
           storeAddress: [
-            barangay?.name,
-            city?.name,
-            province?.name,
+            address.barangay?.brgy_name,
+            address.city?.city_name,
+            address.province?.province_name,
           ].filter(Boolean).join(', '),
           contactInfo: formData.owner.trim(),
           phone: formData.contactPhone.trim(),
@@ -274,60 +258,8 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
 
             {/* Right column: PH location cascading selects */}
             <div className="space-y-4">
-              {/* Province */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Province *</label>
-                <select
-                  value={provinceCode}
-                  onChange={(e) => {
-                    setProvinceCode(e.target.value);
-                    setCityCode('');
-                    setBarangayCode('');
-                  }}
-                  disabled={loading}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
-                >
-                  <option value="">Select Province</option>
-                  {provinces.map(p => (
-                    <option key={p.code} value={p.code}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* City / Municipality */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">City / Municipality *</label>
-                <select
-                  value={cityCode}
-                  onChange={(e) => {
-                    setCityCode(e.target.value);
-                    setBarangayCode('');
-                  }}
-                  disabled={!provinceCode || loading}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
-                >
-                  <option value="">Select City / Municipality</option>
-                  {cities.map(c => (
-                    <option key={c.code} value={c.code}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Barangay */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Barangay *</label>
-                <select
-                  value={barangayCode}
-                  onChange={(e) => setBarangayCode(e.target.value)}
-                  disabled={!cityCode || loading}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
-                >
-                  <option value="">Select Barangay</option>
-                  {barangays.map(b => (
-                    <option key={b.code} value={b.code}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+              {/* PH Address Selector */}
+              <PhilippineAddressSelector value={address} onChange={setAddress} />
 
               {/* Street Address */}
               <div>
