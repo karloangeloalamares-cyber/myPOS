@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Staff, StaffRole, Store } from '../types';
 import { staffService } from '../services/staffService';
+import ConfirmDeleteItemsModal from './ConfirmDeleteItemsModal';
 
 interface StaffManagementProps {
   stores: Store[];
@@ -16,6 +17,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
   const [storeIds, setStoreIds] = useState<string[]>([]);
   const [contactPhone, setContactPhone] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [softDeleteTarget, setSoftDeleteTarget] = useState<Staff | null>(null);
 
   const storeMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -60,8 +62,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
   };
 
   const handleSoftDelete = (id: string) => {
-    if (!confirm('Mark staff as inactive?')) return;
-    handleToggleActive(id, false);
+    const target = staff.find(s => s.id === id) || null;
+    setSoftDeleteTarget(target);
   };
 
   return (
@@ -163,9 +165,20 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
           </table>
         </div>
       </div>
+      {softDeleteTarget && (
+        <ConfirmDeleteItemsModal
+          title="Confirm Soft Delete"
+          message={`You are about to mark "${softDeleteTarget.name}" as inactive. This can be reverted later.`}
+          confirmButtonLabel="Mark Inactive"
+          onClose={() => setSoftDeleteTarget(null)}
+          onConfirm={() => {
+            handleToggleActive(softDeleteTarget.id, false);
+            setSoftDeleteTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default StaffManagement;
-
