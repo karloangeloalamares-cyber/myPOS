@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Store } from '../types';
 import { storeService } from '../services/storeService';
+import PhilippineAddressSelector, { type AddressValue } from './PhilippineAddressSelector';
+import { businessPlans, type PlanKey } from '@/config/businessPlans';
+import { getModules, setModule, FREE_PLAN, PREMIUM_PLAN } from '@/services/moduleService';
 
 interface EditStoreModalProps {
   store: Store;
@@ -13,7 +16,9 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: store.name,
-    address: store.address,
+    ownerFirstName: '',
+    ownerMiddleName: '',
+    ownerLastName: '',
     phone: store.phone,
     email: store.email,
     taxRate: store.settings.taxRate,
@@ -22,6 +27,39 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
     currency: store.settings.currency,
     enabled: store.enabled,
   });
+  // Initialize owner fields from existing ownerName
+  useEffect(() => {
+    const full = (store.ownerName || '').trim();
+    if (!full) return;
+    const parts = full.split(/\s+/);
+    if (parts.length === 1) {
+      setFormData(prev => ({ ...prev, ownerFirstName: parts[0] }));
+    } else if (parts.length === 2) {
+      setFormData(prev => ({ ...prev, ownerFirstName: parts[0], ownerLastName: parts[1] }));
+    } else {
+      const first = parts[0];
+      const last = parts[parts.length - 1];
+      const middle = parts.slice(1, -1).join(' ');
+      setFormData(prev => ({ ...prev, ownerFirstName: first, ownerMiddleName: middle, ownerLastName: last }));
+    }
+  }, [store.ownerName]);
+
+  // Address and modules states
+  const [address, setAddress] = useState<AddressValue>({});
+  const [street, setStreet] = useState<string>(store.addressStructured?.street || store.address || '');
+  const [plan, setPlan] = useState<'Starter' | 'Pro' | 'Scale'>('Starter');
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  useEffect(() => {
+    getModules(store.id)
+      .then(map => {
+        const arr = Object.entries(map).filter(([,v])=>!!v).map(([k])=>k);
+        setSelectedModules(arr);
+        if (arr.includes('multi_branch')) setPlan('Scale');
+        else if (arr.includes('clients') || arr.includes('appointments') || arr.includes('loyalty')) setPlan('Pro');
+        else setPlan('Starter');
+      })
+      .catch(() => setSelectedModules(Object.entries(FREE_PLAN).filter(([,v])=>v).map(([k])=>k)));
+  }, [store.id]);
 
   const timezones = [
     'UTC',
@@ -41,6 +79,21 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
 
   const currencies = ['USD', 'PHP', 'EUR', 'GBP', 'JPY', 'CNY', 'AUD', 'CAD', 'SGD', 'HKD'];
 
+  // Helpers similar to CreateStoreModal
+  const getAllModuleIds = () => {
+    const set = new Set<string>([...Object.keys(FREE_PLAN), ...Object.keys(PREMIUM_PLAN)]);
+    Object.values(businessPlans).forEach((plans) => {
+      Object.values(plans).forEach((arr) => arr.forEach((m) => set.add(m)));
+    });
+    return Array.from(set);
+  };
+
+  function seedModulesForPlan(businessType: string, planKey: PlanKey, set: (mods: string[]) => void) {
+    const typeKey = (businessType || 'retail').toLowerCase();
+    const plans = (businessPlans as any)[typeKey] ?? businessPlans.retail;
+    set(plans[planKey] || []);
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
@@ -57,10 +110,7 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
       setError('Store name is required');
       return;
     }
-    if (!formData.address.trim()) {
-      setError('Address is required');
-      return;
-    }
+    if (!street.trim()) { setError('Street address is required'); return; }
     if (!formData.phone.trim()) {
       setError('Contact phone is required');
       return;
@@ -74,17 +124,20 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
     setError('');
 
     try {
+      const ownerFullName = [formData.ownerFirstName.trim(), formData.ownerMiddleName.trim(), formData.ownerLastName.trim()].filter(Boolean).join(' ');
+
       const updatedStore: Store = {
         ...store,
         name: formData.name.trim(),
-        address: formData.address.trim(),
+        address: street.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim(),
+        ownerName: ownerFullName,
         enabled: formData.enabled,
         settings: {
           ...store.settings,
           storeName: formData.name.trim(),
-          storeAddress: formData.address.trim(),
+          storeAddress: [address.barangay?.brgy_name, address.city?.city_name, address.province?.province_name].filter(Boolean).join(', '),
           phone: formData.phone.trim(),
           email: formData.email.trim(),
           taxRate: formData.taxRate,
@@ -92,11 +145,24 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
           timezone: formData.timezone,
           currency: formData.currency,
         },
+        addressStructured: {
+          street: street.trim(),
+          province: address.province?.province_name || store.addressStructured?.province || '',
+          city: address.city?.city_name || store.addressStructured?.city || '',
+          barangay: address.barangay?.brgy_name || store.addressStructured?.barangay || '',
+        },
         updatedAt: new Date(),
       };
 
       // Call service to update store
       const savedStore = await storeService.updateStore(store.id, updatedStore);
+      // Save modules according to selection
+      try {
+        const all = Array.from(new Set<string>([...Object.keys(FREE_PLAN), ...Object.keys(PREMIUM_PLAN), ...Object.values(businessPlans).flatMap(p => Object.values(p).flat())]));
+        const finalMap: Record<string, boolean> = {};
+        all.forEach(m => { finalMap[m] = selectedModules.includes(m); });
+        await Promise.all(Object.entries(finalMap).map(([name, enabled]) => setModule(store.id, name as any, !!enabled)));
+      } catch {}
       onStoreUpdated(savedStore);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update store');
@@ -161,20 +227,29 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
             />
           </div>
 
-          {/* Address */}
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium text-slate-700 mb-1">
-              Address *
-            </label>
-            <input
-              type="text"
-              id="address"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              disabled={loading}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
-            />
+          {/* Owner Name */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Owner First Name *</nlabel>
+              <input name="ownerFirstName" value={formData.ownerFirstName} onChange={handleChange} disabled={loading} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Middle Name</label>
+              <input name="ownerMiddleName" value={formData.ownerMiddleName} onChange={handleChange} disabled={loading} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+              <input name="ownerLastName" value={formData.ownerLastName} onChange={handleChange} disabled={loading} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition" />
+            </div>
+          </div>
+
+          {/* PH Address + Street */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <PhilippineAddressSelector value={address} onChange={setAddress} />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Street Address *</label>
+              <input type="text" value={street} onChange={(e)=> setStreet(e.target.value)} disabled={loading} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition" />
+            </div>
           </div>
 
           {/* Phone */}
@@ -298,6 +373,26 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
             <label htmlFor="enabled" className="text-sm font-medium text-slate-700 cursor-pointer">
               Store is Active
             </label>
+          </div>
+
+          {/* Modules + Plan seeding */}
+          <div className="p-3 border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-slate-700">Modules</div>
+              <div className="flex items-center gap-2">
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Starter'?'bg-slate-800 text-white':'bg-slate-100'}`} onClick={()=>{ setPlan('Starter'); seedModulesForPlan(store.businessType || 'retail','starter', setSelectedModules); }}>Seed Starter</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Pro'?'bg-amber-500 text-white':'bg-amber-100'}`} onClick={()=>{ setPlan('Pro'); seedModulesForPlan(store.businessType || 'retail','pro', setSelectedModules); }}>Seed Pro</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Scale'?'bg-emerald-500 text-white':'bg-emerald-100'}`} onClick={()=>{ setPlan('Scale'); seedModulesForPlan(store.businessType || 'retail','scale', setSelectedModules); }}>Seed Scale</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+              {getAllModuleIds().map(key => (
+                <label key={key} className="flex items-center gap-2">
+                  <input type="checkbox" checked={selectedModules.includes(key)} onChange={(e)=> setSelectedModules(prev => e.target.checked ? Array.from(new Set([...prev, key])) : prev.filter(m => m !== key))} />
+                  <span className="capitalize">{key.replace('_',' ')}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Buttons */}
