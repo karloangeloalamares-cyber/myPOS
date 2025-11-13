@@ -3,6 +3,7 @@ import { Store, BusinessType } from '../types';
 import { storeService } from '../services/storeService';
 import CreateStoreModal from './CreateStoreModal';
 import EditStoreModal from './EditStoreModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { BUSINESS_PRESETS } from '../src/config/businessPresets';
 import StaffManagement from './StaffManagement';
 
@@ -13,6 +14,7 @@ export default function AdminDashboard() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<Store | null>(null);
 
   useEffect(() => {
     loadStores();
@@ -54,14 +56,12 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteStore = async (storeId: string) => {
-    if (window.confirm('Are you sure you want to delete this store? This action cannot be undone.')) {
-      try {
-        await storeService.deleteStore(storeId);
-        setStores(stores.filter(s => s.id !== storeId));
-      } catch (error) {
-        console.error('Failed to delete store:', error);
-        alert('Failed to delete store');
-      }
+    try {
+      await storeService.deleteStore(storeId);
+      setStores(stores.filter(s => s.id !== storeId));
+    } catch (error) {
+      console.error('Failed to delete store:', error);
+      alert('Failed to delete store');
     }
   };
 
@@ -248,7 +248,7 @@ export default function AdminDashboard() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteStore(store.id)}
+                      onClick={() => setDeleteTarget(store)}
                       className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium text-sm flex items-center justify-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,6 +282,13 @@ export default function AdminDashboard() {
             setSelectedStore(null);
           }}
           onStoreUpdated={handleEditStore}
+        />
+      )}
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          storeName={deleteTarget.name}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => handleDeleteStore(deleteTarget.id)}
         />
       )}
     </div>

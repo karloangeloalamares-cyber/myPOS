@@ -5,6 +5,7 @@ import { User, UserRole, Store } from '../types';
 
 const USER_KEY = 'current_user';
 const ROLE_KEY = 'userRole';
+const SA_PASSWORD_KEY = 'super_admin_password';
 const TEST_USERS_KEY = 'test_users_v1';
 const OWNERS_KEY = 'store_owners_v1';
 
@@ -80,6 +81,7 @@ export async function loginSuperAdmin(email: string, password: string): Promise<
   if (!email || !password) {
     throw new Error('Email and password are required');
   }
+  try { localStorage.setItem(SA_PASSWORD_KEY, password); } catch {}
   const user: User = {
     id: `sa_${Date.now()}`,
     email,
@@ -93,6 +95,15 @@ export async function loginSuperAdmin(email: string, password: string): Promise<
   };
   setCurrentUser(user);
   return user;
+}
+
+export function verifySuperAdminPassword(pw: string): boolean {
+  try {
+    const saved = localStorage.getItem(SA_PASSWORD_KEY);
+    return !!saved && saved === pw;
+  } catch {
+    return false;
+  }
 }
 
 export async function loginStoreUser(params: {
