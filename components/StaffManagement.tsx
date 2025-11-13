@@ -11,7 +11,9 @@ const roleOptions: StaffRole[] = ['STAFF', 'CASHIER', 'THERAPIST', 'BARBER', 'WA
 
 const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
   const [staff, setStaff] = useState<Staff[]>(() => staffService.getAll());
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [nickname, setNickname] = useState('');
   const [role, setRole] = useState<StaffRole>('STAFF');
   const [storeIds, setStoreIds] = useState<string[]>([]);
@@ -26,7 +28,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
   }, [stores]);
 
   const resetForm = () => {
-    setName('');
+    setFirstName('');
+    setMiddleName('');
+    setLastName('');
     setNickname('');
     setRole('STAFF');
     setStoreIds([]);
@@ -40,12 +44,17 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert('Name is required');
+    if (!firstName.trim()) {
+      alert('First name is required');
       return;
     }
+    if (!lastName.trim()) {
+      alert('Last name is required');
+      return;
+    }
+    const fullName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
     const created = staffService.create({
-      name: name.trim(),
+      name: fullName,
       nickname: nickname.trim() || undefined,
       role,
       storeIds: [...storeIds],
@@ -80,8 +89,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
         <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-4">Add Staff</h3>
         <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Name *</label>
-            <input className="w-full px-3 py-2 border rounded-md dark:bg-slate-700 dark:border-slate-600" value={name} onChange={e => setName(e.target.value)} required />
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">First Name *</label>
+            <input className="w-full px-3 py-2 border rounded-md dark:bg-slate-700 dark:border-slate-600" value={firstName} onChange={e => setFirstName(e.target.value)} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Middle Name</label>
+            <input className="w-full px-3 py-2 border rounded-md dark:bg-slate-700 dark:border-slate-600" value={middleName} onChange={e => setMiddleName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Last Name *</label>
+            <input className="w-full px-3 py-2 border rounded-md dark:bg-slate-700 dark:border-slate-600" value={lastName} onChange={e => setLastName(e.target.value)} required />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Nickname</label>

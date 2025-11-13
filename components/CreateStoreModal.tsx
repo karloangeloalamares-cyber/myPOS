@@ -18,7 +18,9 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
   const [modules, setModules] = useState<Record<string, boolean>>({ ...FREE_PLAN });
   const [formData, setFormData] = useState({
     name: '',
-    owner: '',
+    ownerFirstName: '',
+    ownerMiddleName: '',
+    ownerLastName: '',
     // Location fields are handled via separate state below
     contactPhone: '',
     contactEmail: '',
@@ -63,8 +65,12 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
       setError('Store name is required');
       return;
     }
-    if (!formData.owner.trim()) {
-      setError('Owner is required');
+    if (!formData.ownerFirstName.trim()) {
+      setError('Owner first name is required');
+      return;
+    }
+    if (!formData.ownerLastName.trim()) {
+      setError('Owner last name is required');
       return;
     }
     if (!address.province) {
@@ -100,6 +106,12 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
     setError('');
 
     try {
+      const ownerFullName = [
+        formData.ownerFirstName.trim(),
+        formData.ownerMiddleName.trim(),
+        formData.ownerLastName.trim(),
+      ].filter(Boolean).join(' ');
+
       const newStore: Store = {
         id: `store_${Date.now()}`,
         name: formData.name.trim(),
@@ -108,7 +120,7 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
         address: street.trim(),
         phone: formData.contactPhone.trim(),
         email: formData.contactEmail.trim(),
-        ownerName: formData.owner.trim(),
+        ownerName: ownerFullName,
         contactPhone: formData.contactPhone.trim(),
         contactEmail: formData.contactEmail.trim(),
         addressStructured: {
@@ -127,7 +139,7 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
             address.city?.city_name,
             address.province?.province_name,
           ].filter(Boolean).join(', '),
-          contactInfo: formData.owner.trim(),
+          contactInfo: ownerFullName,
           phone: formData.contactPhone.trim(),
           email: formData.contactEmail.trim(),
           taxRate: 0,
@@ -143,7 +155,7 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
       const savedStore = await storeService.createStore(newStore);
       // Provision initial owner record (login still disabled globally)
       const ownerUser = createOwnerForStore(savedStore, {
-        name: formData.owner.trim(),
+        name: ownerFullName,
         email: formData.contactEmail.trim(),
         phone: formData.contactPhone.trim(),
         password: formData.ownerPassword,
@@ -210,19 +222,47 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
                 />
               </div>
 
-              {/* Owner */}
-              <div>
-                <label htmlFor="owner" className="block text-sm font-medium text-slate-700 mb-1">Owner *</label>
-                <input
-                  type="text"
-                  id="owner"
-                  name="owner"
-                  value={formData.owner}
-                  onChange={handleChange}
-                  placeholder="e.g., Juan Dela Cruz"
-                  disabled={loading}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
-                />
+              {/* Owner Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label htmlFor="ownerFirstName" className="block text-sm font-medium text-slate-700 mb-1">Owner First Name *</label>
+                  <input
+                    type="text"
+                    id="ownerFirstName"
+                    name="ownerFirstName"
+                    value={formData.ownerFirstName}
+                    onChange={handleChange}
+                    placeholder="e.g., Juan"
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="ownerMiddleName" className="block text-sm font-medium text-slate-700 mb-1">Middle Name</label>
+                  <input
+                    type="text"
+                    id="ownerMiddleName"
+                    name="ownerMiddleName"
+                    value={formData.ownerMiddleName}
+                    onChange={handleChange}
+                    placeholder="e.g., Santos"
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="ownerLastName" className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    id="ownerLastName"
+                    name="ownerLastName"
+                    value={formData.ownerLastName}
+                    onChange={handleChange}
+                    placeholder="e.g., Dela Cruz"
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed transition"
+                  />
+                </div>
               </div>
 
               {/* Contact Phone */}
