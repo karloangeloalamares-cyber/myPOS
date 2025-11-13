@@ -639,7 +639,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`flex flex-col h-screen w-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-200 font-sans overflow-hidden`}>
+    <div className={`flex flex-col min-h-screen w-full bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-200 font-sans overflow-x-hidden`}>
       <Header
         theme={theme}
         setTheme={setTheme}
@@ -650,7 +650,7 @@ const App: React.FC = () => {
         currentUser={currentUser}
         onLogout={handleLogout}
       />
-      <main className="flex-grow w-full p-4 lg:p-6 overflow-hidden">
+      <main className="flex-grow w-full p-4 lg:p-6 overflow-y-auto">
         {renderPage()}
       </main>
 
