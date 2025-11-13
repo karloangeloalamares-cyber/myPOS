@@ -230,27 +230,10 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  {/* Business Type quick edit */}
-                  <div className="mt-3 text-xs text-slate-600 flex items-center gap-2">
-                    <span>Business:</span>
-                    <select
-                      className="px-2 py-1 border rounded-md text-xs border-slate-300"
-                      value={store.businessType || 'RESTAURANT'}
-                      onChange={async (e) => {
-                        const nextType = e.target.value as BusinessType;
-                        const updated = await storeService.updateStore(store.id, {
-                          businessType: nextType,
-                          features: BUSINESS_PRESETS[nextType],
-                        });
-                        setStores(prev => prev.map(s => s.id === store.id ? updated : s));
-                      }}
-                    >
-                      <option value="RESTAURANT">Restaurant</option>
-                      <option value="SALON">Salon</option>
-                      <option value="SARI_SARI">Sari-Sari</option>
-                      <option value="LAUNDRY">Laundry</option>
-                      <option value="PHARMACY">Pharmacy</option>
-                    </select>
+                  {/* Business Type (read-only) */}
+                  <div className="mt-3 text-xs text-slate-600">
+                    <span className="text-slate-500">Business:</span>{' '}
+                    <span className="font-medium text-slate-800">{store.businessType || 'RESTAURANT'}</span>
                   </div>
 
                   {/* Actions */}
