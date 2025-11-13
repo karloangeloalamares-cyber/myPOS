@@ -4,6 +4,7 @@ import { storeService } from '../services/storeService';
 import CreateStoreModal from './CreateStoreModal';
 import EditStoreModal from './EditStoreModal';
 import { useConfirm } from './ConfirmProvider';
+import { getModules } from '@/services/moduleService';
 import { BUSINESS_PRESETS } from '../src/config/businessPresets';
 import StaffManagement from './StaffManagement';
 
@@ -14,6 +15,7 @@ export default function AdminDashboard() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [modulesByStore, setModulesByStore] = useState<Record<string, Record<string, boolean>>>({});
   const confirm = useConfirm();
 
   useEffect(() => {
@@ -25,6 +27,15 @@ export default function AdminDashboard() {
     try {
       const allStores = await storeService.getAllStores();
       setStores(allStores || []);
+      // Load modules for plan labeling (local or remote)
+      try {
+        const entries = await Promise.all(
+          (allStores || []).map(async s => [s.id, await getModules(s.id)] as const)
+        );
+        const map: Record<string, Record<string, boolean>> = {};
+        entries.forEach(([id, mod]) => { map[id] = mod as any; });
+        setModulesByStore(map);
+      } catch {}
     } catch (error) {
       console.error('Failed to load stores:', error);
     } finally {
@@ -78,6 +89,14 @@ export default function AdminDashboard() {
       });
       await handleDeleteStore(store.id);
     } catch {}
+  };
+
+  const getPlanLabel = (storeId: string): 'Starter' | 'Pro' | 'Scale' => {
+    const mods = modulesByStore[storeId] || {};
+    const enabled = Object.keys(mods).filter(k => mods[k]);
+    if (enabled.includes('multi_branch')) return 'Scale';
+    if (enabled.includes('clients') || enabled.includes('appointments') || enabled.includes('loyalty')) return 'Pro';
+    return 'Starter';
   };
 
   // Module toggles removed from dashboard; handled in Create Store modal
@@ -244,6 +263,9 @@ export default function AdminDashboard() {
                   <div className="mt-3 text-xs text-slate-600">
                     <span className="text-slate-500">Business:</span>{' '}
                     <span className="font-medium text-slate-800">{store.businessType || 'RESTAURANT'}</span>
+                    <span className="mx-2 text-slate-400">•</span>
+                    <span className="text-slate-500">Plan:</span>{' '}
+                    <span className="font-medium text-slate-800">{getPlanLabel(store.id)}</span>
                   </div>
 
                   {/* Actions */}
