@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Store } from '../types';
+import { Store, Staff, StaffRole } from '../types';
 import { storeService } from '../services/storeService';
 import PhilippineAddressSelector, { type AddressValue } from './PhilippineAddressSelector';
 import { businessPlans, type PlanKey } from '@/config/businessPlans';
 import { getModules, setModule, FREE_PLAN, PREMIUM_PLAN } from '@/services/moduleService';
+import { staffService } from '../services/staffService';
 
 interface EditStoreModalProps {
   store: Store;
@@ -60,6 +61,49 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
       })
       .catch(() => setSelectedModules(Object.entries(FREE_PLAN).filter(([,v])=>v).map(([k])=>k)));
   }, [store.id]);
+
+  // Store-specific staff management
+  const [storeStaff, setStoreStaff] = useState<Staff[]>([]);
+  const [staffFirstName, setStaffFirstName] = useState('');
+  const [staffMiddleName, setStaffMiddleName] = useState('');
+  const [staffLastName, setStaffLastName] = useState('');
+  const [staffNickname, setStaffNickname] = useState('');
+  const [staffPhone, setStaffPhone] = useState('');
+  const [staffRole, setStaffRole] = useState<StaffRole>('STAFF');
+  const [staffActive, setStaffActive] = useState(true);
+
+  useEffect(() => {
+    try {
+      const all = staffService.getAll();
+      setStoreStaff(all.filter(s => s.storeIds.includes(store.id)));
+    } catch { setStoreStaff([]); }
+  }, [store.id]);
+
+  const resetStaffForm = () => {
+    setStaffFirstName(''); setStaffMiddleName(''); setStaffLastName('');
+    setStaffNickname(''); setStaffPhone(''); setStaffRole('STAFF'); setStaffActive(true);
+  };
+
+  const handleCreateStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffFirstName.trim() || !staffLastName.trim()) return;
+    const name = [staffFirstName.trim(), staffMiddleName.trim(), staffLastName.trim()].filter(Boolean).join(' ');
+    const created = staffService.create({
+      name,
+      nickname: staffNickname.trim() || undefined,
+      role: staffRole,
+      storeIds: [store.id],
+      contactPhone: staffPhone.trim() || undefined,
+      isActive: staffActive,
+    });
+    setStoreStaff(prev => [...prev, created]);
+    resetStaffForm();
+  };
+
+  const toggleStaffActive = (id: string, next: boolean) => {
+    const updated = staffService.update(id, { isActive: next });
+    if (updated) setStoreStaff(prev => prev.map(s => s.id === id ? updated : s));
+  };
 
   const timezones = [
     'UTC',
@@ -392,6 +436,81 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
                   <span className="capitalize">{key.replace('_',' ')}</span>
                 </label>
               ))}
+            </div>
+          </div>
+
+          {/* Store Staff */}
+          <div className="bg-white rounded-lg border p-4 space-y-4">
+            <h3 className="text-base font-semibold text-slate-800">Store Staff</h3>
+            <form onSubmit={handleCreateStaff} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
+                <input value={staffFirstName} onChange={e=>setStaffFirstName(e.target.value)} className="w-full px-3 py-2 border rounded-md" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Middle Name</label>
+                <input value={staffMiddleName} onChange={e=>setStaffMiddleName(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                <input value={staffLastName} onChange={e=>setStaffLastName(e.target.value)} className="w-full px-3 py-2 border rounded-md" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nickname</label>
+                <input value={staffNickname} onChange={e=>setStaffNickname(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Phone</label>
+                <input value={staffPhone} onChange={e=>setStaffPhone(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                <select value={staffRole} onChange={e=>setStaffRole(e.target.value as StaffRole)} className="w-full px-3 py-2 border rounded-md">
+                  <option value="STAFF">Staff</option>
+                  <option value="CASHIER">Cashier</option>
+                  <option value="THERAPIST">Therapist</option>
+                  <option value="BARBER">Barber</option>
+                  <option value="WAITER">Waiter</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={staffActive} onChange={e=>setStaffActive(e.target.checked)} />
+                <span className="text-sm">Active</span>
+              </div>
+              <div className="md:col-span-3 flex justify-end">
+                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Add Staff</button>
+              </div>
+            </form>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Role</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Contact</th>
+                    <th className="px-4 py-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {storeStaff.map(s => (
+                    <tr key={s.id}>
+                      <td className="px-4 py-2 text-sm">{s.name}{s.nickname ? ` (${s.nickname})` : ''}</td>
+                      <td className="px-4 py-2 text-sm">{s.role}</td>
+                      <td className="px-4 py-2 text-sm">{s.contactPhone || ''}</td>
+                      <td className="px-4 py-2 text-right">
+                        <button onClick={()=> toggleStaffActive(s.id, !s.isActive)} className="px-3 py-1.5 text-xs rounded-md border bg-white hover:bg-slate-50">
+                          {s.isActive ? 'Mark Inactive' : 'Mark Active'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {storeStaff.length === 0 && (
+                    <tr><td className="px-4 py-6 text-sm text-slate-500" colSpan={4}>No staff yet for this store.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
