@@ -22,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ theme, setTheme, storeName, stores, cur
   return (
     <header className="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-40">
       <div className="container mx-auto px-4 lg:px-6 py-4 flex items-center justify-between">
-        <a href="#/" className="flex items-center space-x-3">
+        <a href={currentUser?.role === 'super_admin' ? '#/admin' : '#/'} className="flex items-center space-x-3" title={currentUser?.role === 'super_admin' ? 'Go to Super Admin Dashboard' : 'Go to Home'}>
           <ShopIcon className="h-8 w-8 text-indigo-600" />
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
             {storeName}
