@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { verifySuperAdminPassword } from '@/services/localAuth';
 
 type Props = {
   storeName: string;
@@ -8,19 +7,14 @@ type Props = {
 };
 
 export default function ConfirmDeleteModal({ storeName, onConfirm, onClose }: Props) {
-  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
     setError('');
-    if (!password) {
-      setError('Please enter your super admin password to confirm.');
-      return;
-    }
-    const valid = verifySuperAdminPassword(password);
-    if (!valid) {
-      setError('Incorrect password.');
+    if (confirmation.trim() !== 'DELETE') {
+      setError('Type DELETE to confirm.');
       return;
     }
     setLoading(true);
@@ -44,13 +38,13 @@ export default function ConfirmDeleteModal({ storeName, onConfirm, onClose }: Pr
           <p className="text-sm text-slate-700 dark:text-slate-300">
             You are about to delete <span className="font-semibold">{storeName}</span>. This action cannot be undone.
           </p>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Super Admin Password</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Type DELETE to confirm</label>
           <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="text"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
             className="w-full px-3 py-2 border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-            placeholder="Re-enter your password"
+            placeholder="DELETE"
             disabled={loading}
           />
           {error && (
@@ -77,4 +71,3 @@ export default function ConfirmDeleteModal({ storeName, onConfirm, onClose }: Pr
     </div>
   );
 }
-
