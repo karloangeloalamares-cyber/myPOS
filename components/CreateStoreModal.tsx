@@ -4,6 +4,7 @@ import { storeService } from '../services/storeService';
 import { createOwnerForStore } from '../services/localAuth';
 import PhilippineAddressSelector, { AddressValue } from './PhilippineAddressSelector';
 import { FREE_PLAN, PREMIUM_PLAN, seedForPlan, setModule } from '@/services/moduleService';
+import { businessPlans, type PlanKey } from '@/config/businessPlans';
 import { BUSINESS_MODULE_PRESETS } from '@/config/businessModulePresets';
 
 interface CreateStoreModalProps {
@@ -14,8 +15,11 @@ interface CreateStoreModalProps {
 export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStoreModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [plan, setPlan] = useState<'Free'|'Premium'>('Free');
-  const [modules, setModules] = useState<Record<string, boolean>>({ ...FREE_PLAN });
+  const [plan, setPlan] = useState<'Starter' | 'Pro' | 'Scale'>('Starter');
+  // Selected modules as an array for easier seeding and toggling
+  const [selectedModules, setSelectedModules] = useState<string[]>(() => {
+    return Object.entries(FREE_PLAN).filter(([,v]) => !!v).map(([k]) => k);
+  });
   const [formData, setFormData] = useState({
     name: '',
     ownerFirstName: '',
@@ -48,6 +52,26 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
     'Asia/Hong_Kong',
     'Australia/Sydney',
   ];
+
+  // Build a union of all module ids we know about (from legacy presets and new plans)
+  const getAllModuleIds = () => {
+    const set = new Set<string>([...Object.keys(FREE_PLAN), ...Object.keys(PREMIUM_PLAN)]);
+    Object.values(businessPlans).forEach((plans) => {
+      Object.values(plans).forEach((arr) => arr.forEach((m) => set.add(m)));
+    });
+    return Array.from(set);
+  };
+
+  // Plan seeding helper using business type + plan
+  function seedModulesForPlan(
+    businessType: string,
+    planKey: PlanKey,
+    set: (mods: string[]) => void
+  ) {
+    const typeKey = (businessType || 'retail').toLowerCase();
+    const plans = (businessPlans as any)[typeKey] ?? businessPlans.retail;
+    set(plans[planKey] || []);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -164,12 +188,17 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
         await storeService.updateStore(savedStore.id, { managerId: ownerUser.id });
       } catch {}
       try {
-        await seedForPlan(savedStore.id, plan === 'Premium' ? 'premium' : 'free');
-        const vertical = (BUSINESS_MODULE_PRESETS as any)[formData.businessType] || [];
-        const merged: Record<string, boolean> = { ...(modules as any) };
-        (vertical as string[]).forEach((m: string) => { merged[m] = true; });
-        const entries = Object.entries(merged);
-        await Promise.all(entries.map(([name, enabled]) => setModule(savedStore.id, name as any, !!enabled)));
+        // Quick base seed for compatibility (maps Starter->free, Pro/Scale->premium)
+        await seedForPlan(savedStore.id, plan === 'Starter' ? 'free' : 'premium');
+        // Overwrite with exact selection
+        const all = Array.from(new Set<string>([
+          ...Object.keys(FREE_PLAN),
+          ...Object.keys(PREMIUM_PLAN),
+          ...Object.values(businessPlans).flatMap(p => Object.values(p).flat()),
+        ]));
+        const finalMap: Record<string, boolean> = {};
+        all.forEach(m => { finalMap[m] = selectedModules.includes(m); });
+        await Promise.all(Object.entries(finalMap).map(([name, enabled]) => setModule(savedStore.id, name as any, !!enabled)));
       } catch {}
       onStoreCreated(savedStore);
     } catch (err) {
@@ -392,14 +421,20 @@ export default function CreateStoreModal({ onClose, onStoreCreated }: CreateStor
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-slate-700">Modules for customer</div>
               <div className="flex items-center gap-2">
-                <button type="button" className={`px-2 py-1 rounded ${plan==='Free'?'bg-slate-800 text-white':'bg-slate-100'}`} onClick={() => { setPlan('Free'); const base:any = { ...FREE_PLAN }; (BUSINESS_MODULE_PRESETS[formData.businessType]||[]).forEach((m:string)=> base[m]=true); setModules(base); }}>Seed Free</button>
-                <button type="button" className={`px-2 py-1 rounded ${plan==='Premium'?'bg-amber-500 text-white':'bg-amber-100'}`} onClick={() => { setPlan('Premium'); const base:any = { ...PREMIUM_PLAN }; (BUSINESS_MODULE_PRESETS[formData.businessType]||[]).forEach((m:string)=> base[m]=true); setModules(base); }}>Seed Premium</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Starter'?'bg-slate-800 text-white':'bg-slate-100'}`}
+                  onClick={() => { setPlan('Starter'); seedModulesForPlan(formData.businessType, 'starter', setSelectedModules); }}>Seed Starter</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Pro'?'bg-amber-500 text-white':'bg-amber-100'}`}
+                  onClick={() => { setPlan('Pro'); seedModulesForPlan(formData.businessType, 'pro', setSelectedModules); }}>Seed Pro</button>
+                <button type="button" className={`px-2 py-1 rounded ${plan==='Scale'?'bg-emerald-500 text-white':'bg-emerald-100'}`}
+                  onClick={() => { setPlan('Scale'); seedModulesForPlan(formData.businessType, 'scale', setSelectedModules); }}>Seed Scale</button>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-              {Object.keys({ ...FREE_PLAN, ...PREMIUM_PLAN }).map((key) => (
+              {getAllModuleIds().map((key) => (
                 <label key={key} className="flex items-center gap-2">
-                  <input type="checkbox" checked={!!modules[key]} onChange={(e)=> setModules(prev => ({ ...prev, [key]: e.target.checked }))} />
+                  <input type="checkbox" checked={selectedModules.includes(key)} onChange={(e)=> {
+                    setSelectedModules(prev => e.target.checked ? Array.from(new Set([...prev, key])) : prev.filter(m => m !== key));
+                  }} />
                   <span className="capitalize">{key.replace('_',' ')}</span>
                 </label>
               ))}
