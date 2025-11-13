@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Staff, StaffRole, Store } from '../types';
 import { staffService } from '../services/staffService';
-import ConfirmDeleteItemsModal from './ConfirmDeleteItemsModal';
+import { useConfirm } from './ConfirmProvider';
 
 interface StaffManagementProps {
   stores: Store[];
@@ -17,7 +17,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
   const [storeIds, setStoreIds] = useState<string[]>([]);
   const [contactPhone, setContactPhone] = useState('');
   const [isActive, setIsActive] = useState(true);
-  const [softDeleteTarget, setSoftDeleteTarget] = useState<Staff | null>(null);
+  const confirm = useConfirm();
 
   const storeMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -61,9 +61,17 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
     if (updated) setStaff(prev => prev.map(s => s.id === id ? updated : s));
   };
 
-  const handleSoftDelete = (id: string) => {
-    const target = staff.find(s => s.id === id) || null;
-    setSoftDeleteTarget(target);
+  const handleSoftDelete = async (id: string) => {
+    const target = staff.find(s => s.id === id);
+    if (!target) return;
+    try {
+      await confirm({
+        title: 'Confirm Soft Delete',
+        message: `You are about to mark "${target.name}" as inactive. This can be reverted later.`,
+        confirmButtonLabel: 'Mark Inactive',
+      });
+      handleToggleActive(target.id, false);
+    } catch {}
   };
 
   return (
@@ -165,18 +173,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ stores }) => {
           </table>
         </div>
       </div>
-      {softDeleteTarget && (
-        <ConfirmDeleteItemsModal
-          title="Confirm Soft Delete"
-          message={`You are about to mark "${softDeleteTarget.name}" as inactive. This can be reverted later.`}
-          confirmButtonLabel="Mark Inactive"
-          onClose={() => setSoftDeleteTarget(null)}
-          onConfirm={() => {
-            handleToggleActive(softDeleteTarget.id, false);
-            setSoftDeleteTarget(null);
-          }}
-        />
-      )}
+      {/* Confirmation handled globally via ConfirmProvider */}
     </div>
   );
 };

@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Product } from '../types';
 import ProductModal from './ProductModal';
 import { TrashIcon, CogIcon } from './icons';
-import ConfirmDeleteItemsModal from './ConfirmDeleteItemsModal';
+import { useConfirm } from './ConfirmProvider';
 
 interface ExtendedProduct extends Omit<Product, 'categoryId'> {
   categoryId?: string;
@@ -30,6 +30,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
     const stored = localStorage.getItem('product_enabled_status');
     return stored ? JSON.parse(stored) : {};
   });
+  const confirm = useConfirm();
   
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
   
@@ -118,14 +119,28 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
     handleCloseModal();
   };
 
-  const handleDelete = (productId: string) => {
+  const handleDelete = async (productId: string) => {
     const prod = products.find(p => p.id === productId);
-    setDeleteSingle({ id: productId, name: prod?.name || 'this item' });
+    try {
+      await confirm({
+        message: `You are about to delete "${prod?.name || 'this item'}". This action cannot be undone.`,
+        confirmButtonLabel: 'Delete Item',
+      });
+      onDeleteProduct(productId);
+      setSelectedProducts(prev => prev.filter(id => id !== productId));
+    } catch {}
   }
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedProducts.length === 0) return;
-    setDeleteMultipleOpen(true);
+    try {
+      await confirm({
+        message: `You are about to delete ${selectedProducts.length} selected item(s). This action cannot be undone.`,
+        confirmButtonLabel: 'Delete Selected',
+      });
+      onDeleteMultipleProducts(selectedProducts);
+      setSelectedProducts([]);
+    } catch {}
   }
 
   return (
@@ -316,29 +331,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
         </div>
       </div>
 
-      {/* Confirm modals */}
-      {deleteSingle && (
-        <ConfirmDeleteItemsModal
-          message={`You are about to delete "${deleteSingle.name}". This action cannot be undone.`}
-          confirmButtonLabel="Delete Item"
-          onClose={() => setDeleteSingle(null)}
-          onConfirm={() => {
-            onDeleteProduct(deleteSingle.id);
-            setSelectedProducts(prev => prev.filter(id => id !== deleteSingle.id));
-          }}
-        />
-      )}
-      {deleteMultipleOpen && (
-        <ConfirmDeleteItemsModal
-          message={`You are about to delete ${selectedProducts.length} selected item(s). This action cannot be undone.`}
-          confirmButtonLabel="Delete Selected"
-          onClose={() => setDeleteMultipleOpen(false)}
-          onConfirm={() => {
-            onDeleteMultipleProducts(selectedProducts);
-            setSelectedProducts([]);
-          }}
-        />
-      )}
+      {/* Confirmation handled globally via ConfirmProvider */}
       
       {isModalOpen && (
         <ProductModal
@@ -354,7 +347,3 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
 };
 
 export default Inventory;
-
-  // Delete confirmation state
-  const [deleteSingle, setDeleteSingle] = useState<{ id: string; name: string } | null>(null);
-  const [deleteMultipleOpen, setDeleteMultipleOpen] = useState(false);

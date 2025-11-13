@@ -3,7 +3,7 @@ import { Store, BusinessType } from '../types';
 import { storeService } from '../services/storeService';
 import CreateStoreModal from './CreateStoreModal';
 import EditStoreModal from './EditStoreModal';
-import ConfirmDeleteModal from './ConfirmDeleteModal';
+import { useConfirm } from './ConfirmProvider';
 import { BUSINESS_PRESETS } from '../src/config/businessPresets';
 import StaffManagement from './StaffManagement';
 
@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [deleteTarget, setDeleteTarget] = useState<Store | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     loadStores();
@@ -68,6 +68,16 @@ export default function AdminDashboard() {
   const openEditModal = (store: Store) => {
     setSelectedStore(store);
     setShowEditModal(true);
+  };
+
+  const requestDeleteStore = async (store: Store) => {
+    try {
+      await confirm({
+        message: `You are about to delete "${store.name}". This action cannot be undone.`,
+        confirmButtonLabel: 'Delete Store',
+      });
+      await handleDeleteStore(store.id);
+    } catch {}
   };
 
   // Module toggles removed from dashboard; handled in Create Store modal
@@ -248,7 +258,7 @@ export default function AdminDashboard() {
                       Edit
                     </button>
                     <button
-                      onClick={() => setDeleteTarget(store)}
+                      onClick={() => requestDeleteStore(store)}
                       className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium text-sm flex items-center justify-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,13 +294,7 @@ export default function AdminDashboard() {
           onStoreUpdated={handleEditStore}
         />
       )}
-      {deleteTarget && (
-        <ConfirmDeleteModal
-          storeName={deleteTarget.name}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => handleDeleteStore(deleteTarget.id)}
-        />
-      )}
+      {/* Confirmation handled globally via ConfirmProvider */}
     </div>
   );
 }
