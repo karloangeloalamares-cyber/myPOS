@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Header from './components/Header';
+import ConfirmProvider from './components/ConfirmProvider';
 import ProductList from './components/ProductList';
 import Cart from './components/Cart';
 import CategoryTabs from './components/CategoryTabs';
@@ -639,6 +640,7 @@ const App: React.FC = () => {
   };
 
   return (
+    <ConfirmProvider>
     <div className={`flex flex-col min-h-screen w-full bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-200 font-sans overflow-x-hidden`}>
       <Header
         theme={theme}
@@ -705,6 +707,7 @@ const App: React.FC = () => {
         ))}
       </ToastContainer>
     </div>
+    </ConfirmProvider>
   );
 };
 
