@@ -28,6 +28,7 @@ export const staffService = {
     const all = loadStaff();
     const newStaff: Staff = {
       ...data,
+      modules: data.modules || [],
       id: (globalThis.crypto?.randomUUID?.() || `staff_${Date.now()}`) as string,
       createdAt: new Date(),
     };
@@ -48,4 +49,3 @@ export const staffService = {
     saveStaff(all);
   },
 };
-

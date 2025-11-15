@@ -33,8 +33,6 @@ import CommissionsPage from '@/pages/Commissions';
 import ExportPage from '@/pages/Export';
 import RemindersPage from '@/pages/Reminders';
 import MultiBranchPage from '@/pages/MultiBranch';
-import AppointmentsModal from './components/AppointmentsModal';
-import TicketsModal from './components/TicketsModal';
 import UtangLedgerModal from './components/UtangLedgerModal';
 
 // A simple local storage hook
@@ -91,7 +89,6 @@ const App: React.FC = () => {
   const [currentStoreId, setCurrentStoreId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [staff, setStaff] = useState<Staff[]>([]);
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
 
   const displayedStoreName = useMemo(() => {
     if (currentUser?.role === 'super_admin') return 'myPOS Admin';
@@ -106,10 +103,6 @@ const App: React.FC = () => {
     return stores.find(st => st.id === currentStoreId) || null;
   }, [stores, currentStoreId]);
   
-  const availableStaff = useMemo(() => {
-    return staff.filter(s => s.isActive && (!currentStoreId || s.storeIds.includes(currentStoreId)));
-  }, [staff, currentStoreId]);
-  
   // UI State
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isCheckoutModalOpen, setCheckoutModalOpen] = useState(false);
@@ -117,8 +110,6 @@ const App: React.FC = () => {
   const [discount, setDiscount] = useLocalStorage<Discount | null>('discount', null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showAppointments, setShowAppointments] = useState(false);
-  const [showTickets, setShowTickets] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
   const [modules, setModules] = useState<ModuleMap>(FREE_PLAN);
   
@@ -331,7 +322,6 @@ const App: React.FC = () => {
       paymentMethod: paymentMethod as 'cash' | 'card',
       status: 'completed',
       commissionTotal: commissionTotal > 0 ? commissionTotal : 0,
-      staffId: selectedStaffId || null,
     };
     setTransactions(prev => [...prev, newTransaction]);
 
@@ -394,7 +384,7 @@ const App: React.FC = () => {
     handleClearCart();
     setCheckoutModalOpen(false);
     addToast('Transaction completed successfully!', 'success');
-  }, [cart, cartSubtotal, taxAmount, discountAmount, finalTotal, discount, currentStoreId, currentUser, selectedStaffId, setTransactions, handleClearCart, setProducts, setExpenses]);
+  }, [cart, cartSubtotal, taxAmount, discountAmount, finalTotal, discount, currentStoreId, currentUser, setTransactions, handleClearCart, setProducts, setExpenses]);
 
   const handleSaveSettings = (newSettings: SettingsData) => {
     setSettings(newSettings);
@@ -499,32 +489,12 @@ const App: React.FC = () => {
                 {currentStore?.features?.enableTables && (
                   <div className="px-2 py-1 text-xs rounded-md bg-indigo-100 text-indigo-700">Tables</div>
                 )}
-                {currentStore?.features?.enableAppointments && (
-                  <button onClick={() => setShowAppointments(true)} className="px-2 py-1 text-xs rounded-md bg-fuchsia-100 text-fuchsia-700">Appointments</button>
-                )}
-                {(modules['tickets'] || currentStore?.features?.enableTickets) && (
-                  <button onClick={() => setShowTickets(true)} className="px-2 py-1 text-xs rounded-md bg-amber-100 text-amber-700">Tickets</button>
-                )}
                 {currentStore?.features?.enableUtangLedger && (
                   <button onClick={() => setShowLedger(true)} className="px-2 py-1 text-xs rounded-md bg-emerald-100 text-emerald-700">Utang Ledger</button>
                 )}
                 {currentStore?.features?.enableExpiryAlerts && (
                   <div className="px-2 py-1 text-xs rounded-md bg-red-100 text-red-700">Expiry Alerts</div>
                 )}
-                {/* Staff selector (optional) */}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-slate-600 dark:text-slate-300">Staff</label>
-                  <select
-                    value={selectedStaffId}
-                    onChange={(e) => setSelectedStaffId(e.target.value)}
-                    className="px-2 py-1 text-xs border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600"
-                  >
-                    <option value="">Select Staff</option>
-                    {availableStaff.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow min-h-0">
@@ -575,7 +545,14 @@ const App: React.FC = () => {
       case '#/clients':
         return <ClientsPage />;
       case '#/commissions':
-        return <CommissionsPage />;
+        return (
+          <CommissionsPage
+            stores={stores}
+            transactions={transactions}
+            expenses={expenses}
+            currentStoreId={currentStoreId}
+          />
+        );
       case '#/export':
         return <ExportPage />;
       case '#/reminders':
@@ -617,7 +594,7 @@ const App: React.FC = () => {
           currentStoreId={currentStoreId}
         />;
       case '#/settings':
-        if (!currentStoreId) {
+        if (!currentStore) {
           return (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -629,11 +606,20 @@ const App: React.FC = () => {
             </div>
           );
         }
-        return <Settings settings={settings} onSave={handleSaveSettings} />;
+        return (
+          <Settings
+            settings={settings}
+            store={currentStore}
+            modules={modules}
+            staff={staff}
+            onSave={handleSaveSettings}
+            onStaffsChanged={setStaff}
+          />
+        );
       default:
         return (
           <div className="flex items-center justify-center h-full">
-            <HomePage storeName={displayedStoreName} />
+            <HomePage storeName={displayedStoreName} modules={modules} features={currentStore?.features} />
           </div>
         );
     }
@@ -686,12 +672,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {showAppointments && currentStoreId && (
-        <AppointmentsModal storeId={currentStoreId} onClose={() => setShowAppointments(false)} />
-      )}
-      {showTickets && currentStoreId && (
-        <TicketsModal storeId={currentStoreId} onClose={() => setShowTickets(false)} />
-      )}
       {showLedger && currentStoreId && (
         <UtangLedgerModal storeId={currentStoreId} onClose={() => setShowLedger(false)} />
       )}

@@ -79,6 +79,7 @@ export interface Staff {
   role: StaffRole;
   storeIds: string[];
   contactPhone?: string;
+  modules?: string[];
   isActive: boolean;
   createdAt: Date;
 }

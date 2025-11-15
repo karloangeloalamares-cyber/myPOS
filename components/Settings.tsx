@@ -160,9 +160,13 @@ const Settings: React.FC<SettingsProps> = ({
       </div>
 
       <form onSubmit={handleSaveSettings} className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 sm:p-8 space-y-6">
-        <FormInput label="Store Name" name="storeName" value={formData.storeName} onChange={handleInputChange} required />
-        <FormInput label="Store Address" name="storeAddress" value={formData.storeAddress} onChange={handleInputChange} />
-        <FormInput label="Contact Info (Email or Phone)" name="contactInfo" value={formData.contactInfo} onChange={handleInputChange} />
+        <div className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-sm text-slate-600 shadow-lg shadow-slate-200 dark:shadow-none">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Store Owner</p>
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{store.ownerName || owner?.name || 'Unassigned'}</h3>
+          <p className="text-sm text-slate-500">{owner?.email || settings.contactInfo || 'Email not provided'}</p>
+          <p className="text-sm text-slate-500">{owner?.phone || store.phone || 'Phone not provided'}</p>
+          <p className="mt-4 text-xs text-slate-500">Owner details are read-only.</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormInput label="Tax Rate (%)" name="taxRate" type="number" value={formData.taxRate} onChange={handleInputChange} required min="0" step="0.01" />
           <FormInput label="Low Stock Threshold" name="lowStockThreshold" type="number" value={formData.lowStockThreshold} onChange={handleInputChange} required min="0" step="1" />

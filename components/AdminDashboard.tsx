@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Store, BusinessType } from '../types';
+import { Store } from '../types';
 import { storeService } from '../services/storeService';
 import CreateStoreModal from './CreateStoreModal';
 import EditStoreModal from './EditStoreModal';
 import { useConfirm } from './ConfirmProvider';
 import { getModules } from '@/services/moduleService';
 import { BUSINESS_PRESETS } from '../src/config/businessPresets';
-import StaffManagement from './StaffManagement';
 
 export default function AdminDashboard() {
   const [stores, setStores] = useState<Store[]>([]);
-  const [adminTab, setAdminTab] = useState<'STORES' | 'STAFF'>('STORES');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -134,30 +132,12 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              onClick={() => setAdminTab('STORES')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium ${adminTab==='STORES' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-300'}`}
-            >
-              Stores
-            </button>
-            <button
-              onClick={() => setAdminTab('STAFF')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium ${adminTab==='STAFF' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-300'}`}
-            >
-              Staff
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Stats / Main */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {adminTab === 'STAFF' ? (
-          <StaffManagement stores={stores} />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-600">
             <p className="text-slate-600 text-sm font-medium">Total Stores</p>
             <p className="text-3xl font-bold text-slate-900 mt-2">{stores.length}</p>
@@ -293,8 +273,6 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-        )}
-          </>
         )}
       </div>
 

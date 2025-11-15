@@ -108,3 +108,45 @@ export const TagIcon: React.FC<IconProps> = (props) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
     </svg>
 );
+
+export const CalendarIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 2.25v3M18 2.25v3M3.75 8.25h16.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.25h13.5A2.25 2.25 0 0121 7.5v11.25A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75V7.5A2.25 2.25 0 015.25 5.25z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12.75h.008v.008H8v-.008zM12 12.75h.008v.008H12v-.008zM16 12.75h.008v.008H16v-.008zM8 16h.008v.008H8V16zM12 16h.008v.008H12V16z" />
+  </svg>
+);
+
+export const TicketIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 7.5h16.5v2.25a2.25 2.25 0 010 4.5v2.25H3.75v-2.25a2.25 2.25 0 010-4.5V7.5z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 8.25v7.5" />
+  </svg>
+);
+
+export const UsersIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 20.25a7.5 7.5 0 0115 0" />
+  </svg>
+);
+
+export const BellIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 18.75a2.25 2.25 0 11-4.5 0" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 9a7.5 7.5 0 0115 0v3.375c0 .621.249 1.218.69 1.659l.06.06A1.5 1.5 0 0119.5 16.5h-15a1.5 1.5 0 01-1.06-2.566l.06-.06c.441-.441.69-1.038.69-1.659V9z" />
+  </svg>
+);
+
+export const GlobeIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12h19.5M12 2.25c2.485 2.91 2.485 15.09 0 17.5M7.5 4.8a15.6 15.6 0 000 14.4M16.5 4.8a15.6 15.6 0 010 14.4" />
+  </svg>
+);
+
+export const ArrowLeftIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12l7.5-7.5M3 12h18" />
+  </svg>
+);

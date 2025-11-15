@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Store, Staff, StaffRole } from '../types';
 import { storeService } from '../services/storeService';
 import PhilippineAddressSelector, { type AddressValue } from './PhilippineAddressSelector';
 import { businessPlans, type PlanKey } from '@/config/businessPlans';
 import { getModules, setModule, FREE_PLAN, PREMIUM_PLAN } from '@/services/moduleService';
 import { staffService } from '../services/staffService';
+import { useConfirm } from './ConfirmProvider';
 
 interface EditStoreModalProps {
   store: Store;
@@ -44,26 +45,11 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
       setFormData(prev => ({ ...prev, ownerFirstName: first, ownerMiddleName: middle, ownerLastName: last }));
     }
   }, [store.ownerName]);
-
-  // Address and modules states
-  const [address, setAddress] = useState<AddressValue>({});
-  const [street, setStreet] = useState<string>(store.addressStructured?.street || store.address || '');
   const [plan, setPlan] = useState<'Starter' | 'Pro' | 'Scale'>('Starter');
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
-  useEffect(() => {
-    getModules(store.id)
-      .then(map => {
-        const arr = Object.entries(map).filter(([,v])=>!!v).map(([k])=>k);
-        setSelectedModules(arr);
-        if (arr.includes('multi_branch')) setPlan('Scale');
-        else if (arr.includes('clients') || arr.includes('appointments') || arr.includes('loyalty')) setPlan('Pro');
-        else setPlan('Starter');
-      })
-      .catch(() => setSelectedModules(Object.entries(FREE_PLAN).filter(([,v])=>v).map(([k])=>k)));
-  }, [store.id]);
-
-  // Store-specific staff management
-  const [storeStaff, setStoreStaff] = useState<Staff[]>([]);
+  const [address, setAddress] = useState<AddressValue>({});
+  const [street, setStreet] = useState<string>(store.addressStructured?.street || store.address || '');
+  const [staffModules, setStaffModules] = useState<string[]>([]);
   const [staffFirstName, setStaffFirstName] = useState('');
   const [staffMiddleName, setStaffMiddleName] = useState('');
   const [staffLastName, setStaffLastName] = useState('');
@@ -71,39 +57,34 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
   const [staffPhone, setStaffPhone] = useState('');
   const [staffRole, setStaffRole] = useState<StaffRole>('STAFF');
   const [staffActive, setStaffActive] = useState(true);
+  const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
+  const [storeStaff, setStoreStaff] = useState<Staff[]>([]);
+  const confirm = useConfirm();
+
+  useEffect(() => {
+    getModules(store.id)
+      .then(map => {
+        const arr = Object.entries(map).filter(([, v]) => !!v).map(([k]) => k);
+        setSelectedModules(arr);
+        if (arr.includes('multi_branch')) setPlan('Scale');
+        else if (arr.includes('clients') || arr.includes('appointments') || arr.includes('loyalty')) setPlan('Pro');
+        else setPlan('Starter');
+      })
+      .catch(() => setSelectedModules(Object.entries(FREE_PLAN).filter(([, v]) => !!v).map(([k]) => k)));
+  }, [store.id]);
+
+  useEffect(() => {
+    setStaffModules(prev => prev.filter(mod => selectedModules.includes(mod)));
+  }, [selectedModules]);
 
   useEffect(() => {
     try {
       const all = staffService.getAll();
       setStoreStaff(all.filter(s => s.storeIds.includes(store.id)));
-    } catch { setStoreStaff([]); }
+    } catch {
+      setStoreStaff([]);
+    }
   }, [store.id]);
-
-  const resetStaffForm = () => {
-    setStaffFirstName(''); setStaffMiddleName(''); setStaffLastName('');
-    setStaffNickname(''); setStaffPhone(''); setStaffRole('STAFF'); setStaffActive(true);
-  };
-
-  const handleCreateStaff = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!staffFirstName.trim() || !staffLastName.trim()) return;
-    const name = [staffFirstName.trim(), staffMiddleName.trim(), staffLastName.trim()].filter(Boolean).join(' ');
-    const created = staffService.create({
-      name,
-      nickname: staffNickname.trim() || undefined,
-      role: staffRole,
-      storeIds: [store.id],
-      contactPhone: staffPhone.trim() || undefined,
-      isActive: staffActive,
-    });
-    setStoreStaff(prev => [...prev, created]);
-    resetStaffForm();
-  };
-
-  const toggleStaffActive = (id: string, next: boolean) => {
-    const updated = staffService.update(id, { isActive: next });
-    if (updated) setStoreStaff(prev => prev.map(s => s.id === id ? updated : s));
-  };
 
   const timezones = [
     'UTC',
@@ -123,20 +104,19 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
 
   const currencies = ['USD', 'PHP', 'EUR', 'GBP', 'JPY', 'CNY', 'AUD', 'CAD', 'SGD', 'HKD'];
 
-  // Helpers similar to CreateStoreModal
-  const getAllModuleIds = () => {
+  const allModuleIds = useMemo(() => {
     const set = new Set<string>([...Object.keys(FREE_PLAN), ...Object.keys(PREMIUM_PLAN)]);
-    Object.values(businessPlans).forEach((plans) => {
-      Object.values(plans).forEach((arr) => arr.forEach((m) => set.add(m)));
+    Object.values(businessPlans).forEach(plans => {
+      Object.values(plans).forEach(arr => arr.forEach(m => set.add(m)));
     });
     return Array.from(set);
-  };
+  }, []);
 
-  function seedModulesForPlan(businessType: string, planKey: PlanKey, set: (mods: string[]) => void) {
+  const seedModulesForPlan = (businessType: string, planKey: PlanKey, set: (mods: string[]) => void) => {
     const typeKey = (businessType || 'retail').toLowerCase();
     const plans = (businessPlans as any)[typeKey] ?? businessPlans.retail;
     set(plans[planKey] || []);
-  }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -144,6 +124,80 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : type === 'number' ? parseFloat(value) : value,
     }));
+  };
+
+  const staffModuleOptions = useMemo(() => Array.from(new Set([...selectedModules, ...staffModules])), [selectedModules, staffModules]);
+
+  const resetStaffForm = () => {
+    setStaffFirstName('');
+    setStaffMiddleName('');
+    setStaffLastName('');
+    setStaffNickname('');
+    setStaffPhone('');
+    setStaffRole('STAFF');
+    setStaffActive(true);
+    setStaffModules(prev => prev.filter(mod => selectedModules.includes(mod)));
+    setEditingStaffId(null);
+  };
+
+  const startEditingStaff = (staff: Staff) => {
+    const [first, middle, last] = (() => {
+      const parts = staff.name.split(/\s+/);
+      if (parts.length === 1) return [parts[0], '', ''];
+      if (parts.length === 2) return [parts[0], '', parts[1]];
+      return [parts[0], parts.slice(1, -1).join(' '), parts[parts.length - 1]];
+    })();
+    setStaffFirstName(first);
+    setStaffMiddleName(middle);
+    setStaffLastName(last);
+    setStaffNickname(staff.nickname || '');
+    setStaffPhone(staff.contactPhone || '');
+    setStaffRole(staff.role);
+    setStaffActive(staff.isActive);
+    setStaffModules(staff.modules ? staff.modules.filter(mod => selectedModules.includes(mod)) : []);
+    setEditingStaffId(staff.id);
+  };
+
+  const handleStaffSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffFirstName.trim() || !staffLastName.trim()) return;
+    const fullName = [staffFirstName.trim(), staffMiddleName.trim(), staffLastName.trim()].filter(Boolean).join(' ');
+    const payload = {
+      name: fullName,
+      nickname: staffNickname.trim() || undefined,
+      role: staffRole,
+      storeIds: [store.id],
+      contactPhone: staffPhone.trim() || undefined,
+      isActive: staffActive,
+      modules: staffModules,
+    };
+    if (editingStaffId) {
+      const updated = staffService.update(editingStaffId, payload);
+      if (updated) {
+        setStoreStaff(prev => prev.map(s => s.id === updated.id ? updated : s));
+      }
+    } else {
+      const created = staffService.create(payload);
+      setStoreStaff(prev => [...prev, created]);
+    }
+    resetStaffForm();
+  };
+
+  const handleStaffDelete = async (staff: Staff) => {
+    try {
+      await confirm({
+        message: `You are about to delete ${staff.name}. This action cannot be undone.`,
+        confirmButtonLabel: 'Delete Staff',
+      });
+      staffService.delete(staff.id);
+      setStoreStaff(prev => prev.filter(s => s.id !== staff.id));
+      if (editingStaffId === staff.id) resetStaffForm();
+    } catch {}
+  };
+
+  const toggleStaffActive = (id: string, next: boolean) => {
+    const updated = staffService.update(id, { isActive: next });
+    if (updated) setStoreStaff(prev => prev.map(s => s.id === id ? updated : s));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -430,7 +484,7 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-              {getAllModuleIds().map(key => (
+              {allModuleIds.map(key => (
                 <label key={key} className="flex items-center gap-2">
                   <input type="checkbox" checked={selectedModules.includes(key)} onChange={(e)=> setSelectedModules(prev => e.target.checked ? Array.from(new Set([...prev, key])) : prev.filter(m => m !== key))} />
                   <span className="capitalize">{key.replace('_',' ')}</span>
@@ -442,7 +496,7 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
           {/* Store Staff */}
           <div className="bg-white rounded-lg border p-4 space-y-4">
             <h3 className="text-base font-semibold text-slate-800">Store Staff</h3>
-            <form onSubmit={handleCreateStaff} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <form onSubmit={handleStaffSave} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
                 <input value={staffFirstName} onChange={e=>setStaffFirstName(e.target.value)} className="w-full px-3 py-2 border rounded-md" required />
@@ -478,8 +532,39 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
                 <input type="checkbox" checked={staffActive} onChange={e=>setStaffActive(e.target.checked)} />
                 <span className="text-sm">Active</span>
               </div>
-              <div className="md:col-span-3 flex justify-end">
-                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Add Staff</button>
+              <div className="md:col-span-3">
+                <p className="text-sm font-medium text-slate-700 mb-2">Module Access</p>
+                <div className="flex flex-wrap gap-2">
+                  {staffModuleOptions.map(key => {
+                    const available = selectedModules.includes(key);
+                    const labelClass = `inline-flex items-center gap-2 px-2 py-1 border rounded-full text-xs ${available ? 'bg-white' : 'bg-slate-100 text-slate-400'}`;
+                    return (
+                      <label key={key} className={labelClass}>
+                        <input
+                          type="checkbox"
+                          disabled={!available}
+                          checked={staffModules.includes(key)}
+                          onChange={e => {
+                            setStaffModules(prev => e.target.checked ? Array.from(new Set([...prev, key])) : prev.filter(k => k !== key));
+                          }}
+                        />
+                        <span>{key.replace('_', ' ')}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="md:col-span-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {editingStaffId && (
+                    <button type="button" onClick={resetStaffForm} disabled={loading} className="px-4 py-2 border rounded-md text-sm">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                  {editingStaffId ? 'Save Changes' : 'Add Staff'}
+                </button>
               </div>
             </form>
 
@@ -499,8 +584,23 @@ export default function EditStoreModal({ store, onClose, onStoreUpdated }: EditS
                       <td className="px-4 py-2 text-sm">{s.name}{s.nickname ? ` (${s.nickname})` : ''}</td>
                       <td className="px-4 py-2 text-sm">{s.role}</td>
                       <td className="px-4 py-2 text-sm">{s.contactPhone || ''}</td>
-                      <td className="px-4 py-2 text-right">
-                        <button onClick={()=> toggleStaffActive(s.id, !s.isActive)} className="px-3 py-1.5 text-xs rounded-md border bg-white hover:bg-slate-50">
+                      <td className="px-4 py-2 text-right space-x-2">
+                        <button
+                          onClick={() => startEditingStaff(s)}
+                          className="px-3 py-1.5 text-xs rounded-md border bg-white hover:bg-slate-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleStaffDelete(s)}
+                          className="px-3 py-1.5 text-xs rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => toggleStaffActive(s.id, !s.isActive)}
+                          className="px-3 py-1.5 text-xs rounded-md border bg-white hover:bg-slate-50"
+                        >
                           {s.isActive ? 'Mark Inactive' : 'Mark Active'}
                         </button>
                       </td>
