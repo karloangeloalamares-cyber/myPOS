@@ -45,3 +45,54 @@ WHERE item_type IS NULL;
 CREATE INDEX IF NOT EXISTS idx_items_item_type ON items (item_type);
 CREATE INDEX IF NOT EXISTS idx_products_item_type ON products (item_type);
 
+-- 7) Heuristic service backfill (safe guards for optional columns/tables)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'items'
+  ) THEN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'items' AND column_name = 'category'
+    ) THEN
+      UPDATE items
+      SET item_type = 'service'::item_type
+      WHERE item_type IS DISTINCT FROM 'service'
+        AND category ILIKE '%service%';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'items' AND column_name = 'name'
+    ) THEN
+      UPDATE items
+      SET item_type = 'service'::item_type
+      WHERE item_type IS DISTINCT FROM 'service'
+        AND name ILIKE '%service%';
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'products'
+  ) THEN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'category'
+    ) THEN
+      UPDATE products
+      SET item_type = 'service'::item_type
+      WHERE item_type IS DISTINCT FROM 'service'
+        AND category ILIKE '%service%';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'name'
+    ) THEN
+      UPDATE products
+      SET item_type = 'service'::item_type
+      WHERE item_type IS DISTINCT FROM 'service'
+        AND name ILIKE '%service%';
+    END IF;
+  END IF;
+END$$;

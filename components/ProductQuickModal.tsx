@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
+import { isOutOfStock, isStockTrackedItem } from '@/lib/stock';
 
 interface ProductQuickModalProps {
   product: Product;
@@ -9,8 +10,9 @@ interface ProductQuickModalProps {
 
 const ProductQuickModal: React.FC<ProductQuickModalProps> = ({ product, onClose, onAddToCart }) => {
   const [quantity, setQuantity] = useState(1);
-  const isOutOfStock = product.stock <= 0;
-  const maxQuantity = product.stock === Infinity ? 999 : product.stock;
+  const outOfStock = isOutOfStock(product);
+  const hasStockLimit = isStockTrackedItem(product);
+  const maxQuantity = hasStockLimit ? product.stock : 999;
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Math.max(1, Math.min(maxQuantity, parseInt(e.target.value) || 1));
@@ -53,7 +55,7 @@ const ProductQuickModal: React.FC<ProductQuickModalProps> = ({ product, onClose,
               <p className="text-3xl font-bold text-indigo-600">₱{product.price.toFixed(2)}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Cost: ₱{product.cost.toFixed(2)}</p>
             </div>
-            {product.stock !== Infinity && (
+                {hasStockLimit && (
               <div className="text-right">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Stock</p>
                 <p className={`text-lg font-bold ${product.stock <= 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -65,7 +67,7 @@ const ProductQuickModal: React.FC<ProductQuickModalProps> = ({ product, onClose,
         </div>
 
         {/* Quantity Selector */}
-        {!isOutOfStock && (
+        {!outOfStock && (
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -116,7 +118,7 @@ const ProductQuickModal: React.FC<ProductQuickModalProps> = ({ product, onClose,
         )}
 
         {/* Out of Stock Message */}
-        {isOutOfStock && (
+        {outOfStock && (
           <div className="text-center space-y-4">
             <p className="text-lg font-semibold text-red-600">Out of Stock</p>
             <button

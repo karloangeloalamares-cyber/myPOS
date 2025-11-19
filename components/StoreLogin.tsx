@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Store } from '../types';
-import { loginStoreUser, listTestUsersForStore, seedTestUsersForStore, quickLoginTestUser } from '../services/localAuth';
+import { loginStoreUser, listTestUsersForStore, seedTestUsersForStore, quickLoginTestUser, DEFAULT_STORE_OWNER_PASSWORD } from '../services/localAuth';
 import { storeService } from '../services/storeService';
 
 interface StoreLoginProps {
   stores?: Store[]; // optional; if omitted we fetch from storeService
   onSuccess?: (storeId: string) => void;
 }
+
+const DEMO_STORE_CODE = 'DEMO_STORE';
+const DEMO_OWNER_EMAIL = 'owner@mypos.local';
 
 const StoreLogin: React.FC<StoreLoginProps> = ({ stores: storesProp, onSuccess }) => {
   const [stores, setStores] = useState<Store[]>(storesProp || []);
@@ -43,18 +46,29 @@ const StoreLogin: React.FC<StoreLoginProps> = ({ stores: storesProp, onSuccess }
     const sid = storeId || (stores[0]?.id || '');
     if (!sid) return;
     let users = listTestUsersForStore(sid);
+    const currentStore = stores.find(s => s.id === sid);
     if (!users || users.length === 0) {
-      const store = stores.find(s => s.id === sid);
-      if (store) {
-        users = seedTestUsersForStore(store);
+      if (currentStore) {
+        users = seedTestUsersForStore(currentStore);
       }
     }
     setTestUsers(users || []);
     // Autofill the email field with the manager's test email when available
-    if (!email && users && users.length > 0) {
+    if (users && users.length > 0) {
       const manager = users.find(u => u.role === 'store_manager');
-      setEmail((manager || users[0]).email);
+      setEmail(prev => prev || (manager || users[0]).email);
+    } else if (currentStore) {
+      const fallbackEmail = currentStore.contactEmail || currentStore.email;
+      if (fallbackEmail) {
+        setEmail(prev => prev || fallbackEmail);
+      }
     }
+    setPassword(prev => {
+      if (currentStore?.code === DEMO_STORE_CODE) {
+        return prev || DEFAULT_STORE_OWNER_PASSWORD;
+      }
+      return prev ? '' : prev;
+    });
   }, [storeId, stores]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,6 +113,16 @@ const StoreLogin: React.FC<StoreLoginProps> = ({ stores: storesProp, onSuccess }
                 if (users && users.length > 0) {
                   const manager = users.find(u => u.role === 'store_manager');
                   setEmail((manager || users[0]).email);
+                } else {
+                  const targetStore = stores.find(s => s.id === sid);
+                  const fallbackEmail = targetStore?.contactEmail || targetStore?.email || '';
+                  setEmail(fallbackEmail);
+                }
+                const targetStore = stores.find(s => s.id === sid);
+                if (targetStore?.code === DEMO_STORE_CODE) {
+                  setPassword(DEFAULT_STORE_OWNER_PASSWORD);
+                } else {
+                  setPassword('');
                 }
               } catch {}
             }}
@@ -137,6 +161,11 @@ const StoreLogin: React.FC<StoreLoginProps> = ({ stores: storesProp, onSuccess }
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
+      {stores.some(s => s.code === DEMO_STORE_CODE) && (
+        <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+          Demo store credentials: <span className="font-semibold">{DEMO_OWNER_EMAIL}</span> / <span className="font-semibold">{DEFAULT_STORE_OWNER_PASSWORD}</span>
+        </p>
+      )}
       {stores.length > 0 && (
         <div className="mt-6">
           <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Test Logins</div>

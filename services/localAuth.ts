@@ -1,5 +1,7 @@
 import { User, UserRole, Store } from '../types';
 
+export const DEFAULT_STORE_OWNER_PASSWORD = 'owner123';
+
 // Lightweight local-only auth helpers for demo/dev use.
 // Persists to localStorage and does not contact a backend.
 

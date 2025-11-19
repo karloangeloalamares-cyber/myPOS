@@ -28,7 +28,33 @@ export const productService: ProductServiceInterface = {
     // GET /api/stores/:storeId/products
     const key = `products_${storeId}`;
     const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
+    const list: Product[] = stored ? JSON.parse(stored) : [];
+
+    // Normalize IDs to avoid duplicate React keys from older data
+    const seen = new Set<string>();
+    let changed = false;
+    const normalized = list.map((product: Product) => {
+      let id = product.id;
+      if (!id || seen.has(id)) {
+        const fallbackId =
+          (globalThis.crypto?.randomUUID?.() as string | undefined) ??
+          `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        id = fallbackId;
+        changed = true;
+      }
+      seen.add(id);
+      return {
+        ...product,
+        id,
+        stock: (product as any).itemType === 'service' ? Infinity : product.stock,
+      };
+    });
+
+    if (changed) {
+      localStorage.setItem(key, JSON.stringify(normalized));
+    }
+
+    return normalized;
   },
 
   async getProduct(storeId: string, productId: string) {
@@ -41,11 +67,15 @@ export const productService: ProductServiceInterface = {
   async createProduct(storeId: string, product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) {
     // TODO: Implement API call
     // POST /api/stores/:storeId/products
+    const id =
+      (globalThis.crypto?.randomUUID?.() as string | undefined) ??
+      `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const newProduct: Product = {
       ...product,
-      id: `prod_${Date.now()}`,
+      id,
       createdAt: new Date(),
       updatedAt: new Date(),
+      stock: (product as any).itemType === 'service' ? Infinity : product.stock,
     };
     const products = await this.getProducts(storeId);
     const updated = [...products, newProduct];
@@ -59,7 +89,15 @@ export const productService: ProductServiceInterface = {
     const products = await this.getProducts(storeId);
     const index = products.findIndex((p: Product) => p.id === productId);
     if (index === -1) throw new Error('Product not found');
-    products[index] = { ...products[index], ...updates, updatedAt: new Date() };
+    products[index] = {
+      ...products[index],
+      ...updates,
+      updatedAt: new Date(),
+      stock:
+        ((updates as any).itemType === 'service' || (products[index] as any).itemType === 'service')
+          ? Infinity
+          : updates.stock ?? products[index].stock,
+    };
     localStorage.setItem(`products_${storeId}`, JSON.stringify(products));
     return products[index];
   },

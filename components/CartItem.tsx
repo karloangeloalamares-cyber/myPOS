@@ -1,6 +1,6 @@
 import React from 'react';
 import { CartItem as CartItemType } from '../types';
-import QuantityInput from './QuantityInput';
+import { QuantityStepper } from './QuantityStepper';
 
 interface CartItemProps {
   item: CartItemType;
@@ -22,10 +22,10 @@ const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity }) => {
       </div>
       <div className="flex flex-col items-end space-y-1">
         <p className="font-bold text-slate-900 dark:text-white">₱{total.toFixed(2)}</p>
-        <QuantityInput 
+        <QuantityStepper
           value={quantity}
-          stock={item.stock}
-          onChange={(newQuantity) => onUpdateQuantity(item.id, newQuantity)}
+          onDecrease={() => onUpdateQuantity(item.id, Math.max(1, quantity - 1))}
+          onIncrease={() => onUpdateQuantity(item.id, quantity + 1)}
         />
       </div>
     </div>

@@ -173,8 +173,8 @@ const HomePage: React.FC<HomePageProps> = ({ storeName, modules, features }) => 
       <h2 className="text-4xl font-extrabold text-slate-800 dark:text-slate-200">Welcome to {storeName}</h2>
       <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">Select an option to get started.</p>
       <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {cardsToRender.map(card => (
-          <HomeCard key={card.key} {...card} />
+        {cardsToRender.map(({ key, ...rest }) => (
+          <HomeCard key={key} {...rest} />
         ))}
 
         {showAdminShortcut && (

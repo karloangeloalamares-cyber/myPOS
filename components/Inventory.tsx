@@ -4,6 +4,7 @@ import { Product } from '../types';
 import ProductModal from './ProductModal';
 import { TrashIcon, CogIcon } from './icons';
 import { useConfirm } from './ConfirmProvider';
+import { formatStockValue, isLowStock, isOutOfStock, isServiceItem } from '@/lib/stock';
 
 interface ExtendedProduct extends Omit<Product, 'categoryId'> {
   categoryId?: string;
@@ -44,21 +45,21 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const categoryMatch = selectedCategory === 'All' || product.category === selectedCategory;
-      const t = (product as any).itemType || 'product';
-      const typeMatch = typeFilter === 'all' || t === typeFilter;
-      const isOutOfStock = product.stock <= 0;
-      const isLowStock = product.stock > 0 && product.stock <= lowStockThreshold && product.stock !== Infinity;
+      const itemType = ((product as any).itemType || 'product') as string;
+      const typeMatch = typeFilter === 'all' || itemType === typeFilter;
+      const outOfStock = isOutOfStock(product);
+      const lowStock = isLowStock(product, lowStockThreshold);
       
       let statusMatch = true;
       switch (statusFilter) {
         case 'in-stock':
-          statusMatch = !isOutOfStock && !isLowStock;
+          statusMatch = !outOfStock && !lowStock;
           break;
         case 'low-stock':
-          statusMatch = isLowStock;
+          statusMatch = lowStock;
           break;
         case 'out-of-stock':
-          statusMatch = isOutOfStock;
+          statusMatch = outOfStock;
           break;
         default:
           statusMatch = true;
@@ -263,16 +264,35 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
               ) : (
                 filteredProducts.map((product) => {
                   const isSelected = selectedProducts.includes(product.id);
-                  const isOutOfStock = product.stock <= 0;
-                  const isLowStock = product.stock > 0 && product.stock <= lowStockThreshold && product.stock !== Infinity;
                   const isEnabled = enabledStatus[product.id] !== false; // Default to enabled
+                  const itemType = ((product as any).itemType || 'product') as string;
+                  const typeLabel =
+                    itemType === 'product'
+                      ? 'Product'
+                      : itemType === 'service'
+                      ? 'Service'
+                      : itemType === 'menu'
+                      ? 'Menu'
+                      : itemType === 'consumable'
+                      ? 'Consumable'
+                      : 'Ingredient';
+                  const isService = isServiceItem(product);
+                  const outOfStock = isOutOfStock(product);
+                  const lowStock = isLowStock(product, lowStockThreshold);
+                  const stockDisplay = formatStockValue(product);
                   
                   let statusBadge = '';
                   let statusColor = '';
-                  if (isOutOfStock) {
+                  if (!isEnabled) {
+                    statusBadge = 'Disabled';
+                    statusColor = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                  } else if (isService) {
+                    statusBadge = 'Enabled';
+                    statusColor = 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200';
+                  } else if (outOfStock) {
                     statusBadge = 'Out of Stock';
                     statusColor = 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200';
-                  } else if (isLowStock) {
+                  } else if (lowStock) {
                     statusBadge = 'Low Stock';
                     statusColor = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200';
                   } else {
@@ -296,15 +316,15 @@ const Inventory: React.FC<InventoryProps> = ({ products, onAddProduct, onUpdateP
                                <img src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover rounded-md" />
                                <span>{product.name}</span>
                                <span className="text-xs px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 ml-2">
-                                 {((product as any).itemType||'product') === 'product' ? '🛍️ Product' : ((product as any).itemType) === 'service' ? '💇 Service' : ((product as any).itemType) === 'menu' ? '🍱 Menu' : ((product as any).itemType) === 'consumable' ? '🧴 Consumable' : '🧂 Ingredient'}
+                                 {typeLabel}
                                </span>
                           </div>
                       </th>
                       <td className="px-6 py-4">{product.category}</td>
                       <td className="px-6 py-4 text-right font-medium text-slate-800 dark:text-slate-200">₱{product.price.toFixed(2)}</td>
                       <td className="px-6 py-4 text-right">₱{product.cost.toFixed(2)}</td>
-                      <td className={`px-6 py-4 text-right font-bold ${isOutOfStock ? 'text-red-500' : isLowStock ? 'text-yellow-500' : ''}`}>
-                          {product.stock === Infinity ? '∞' : product.stock}
+                      <td className={`px-6 py-4 text-right font-bold ${!isService && outOfStock ? 'text-red-500' : !isService && lowStock ? 'text-yellow-500' : ''}`}>
+                          {stockDisplay}
                       </td>
                       <td className="px-6 py-4">
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>

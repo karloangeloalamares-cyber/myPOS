@@ -21,10 +21,12 @@ import { Toast, ToastContainer } from './components/Toast';
 import { Product, CartItem, Transaction, Expense, SettingsData, Theme, ToastMessage, Discount, Store, User, Staff } from './types';
 // Start with empty products; no test data
 import { storeService } from './services/storeService';
-import { productService } from './services/productService';
 import { staffService } from './services/staffService';
 import { getCurrentUser as getLocalUser, logout as localLogout } from './services/localAuth';
 import { getModules, FREE_PLAN, type ModuleMap } from '@/services/moduleService';
+import { recordTipForSale } from '@/lib/tips';
+import { isServiceItem, isStockTrackedItem } from '@/lib/stock';
+import { ensureDemoData } from './services/demoSeeder';
 import AppointmentsPage from '@/pages/Appointments';
 import TicketsPage from '@/pages/Tickets';
 import TipsPage from '@/pages/Tips';
@@ -90,6 +92,28 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [staff, setStaff] = useState<Staff[]>([]);
 
+  // Ensure product IDs are unique to avoid React key collisions from older saved data
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    const seen = new Set<string>();
+    let changed = false;
+    const normalized = products.map(product => {
+      let id = product.id;
+      if (!id || seen.has(id)) {
+        const fallbackId =
+          (globalThis.crypto?.randomUUID?.() as string | undefined) ??
+          `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        id = fallbackId;
+        changed = true;
+      }
+      seen.add(id);
+      return { ...product, id };
+    });
+    if (changed) {
+      setProducts(normalized);
+    }
+  }, [products, setProducts]);
+
   const displayedStoreName = useMemo(() => {
     if (currentUser?.role === 'super_admin') return 'myPOS Admin';
     if (currentStoreId) {
@@ -148,24 +172,35 @@ const App: React.FC = () => {
     } catch {}
   }, []);
 
-  // Load products for the current store using productService (non-breaking fallback)
+  // Ensure demo data (products, transactions, tips, etc.) exist for the current store
   useEffect(() => {
-    const load = async () => {
-      if (!currentStoreId) return;
+    if (!currentStore) return;
+    let cancelled = false;
+
+    const bootstrap = async () => {
       try {
-        const list = await productService.getProducts(currentStoreId);
-        if (Array.isArray(list) && list.length > 0) setProducts(list);
-      } catch {}
+        const snapshot = await ensureDemoData(currentStore);
+        if (cancelled || !snapshot) return;
+        if (snapshot.products) setProducts(snapshot.products);
+        if (snapshot.transactions) setTransactions(snapshot.transactions);
+        if (snapshot.expenses) setExpenses(snapshot.expenses);
+        if (snapshot.staff) setStaff(snapshot.staff);
+      } catch (error) {
+        console.error('Failed to bootstrap store data', error);
+      }
     };
-    load();
-  }, [currentStoreId, setProducts]);
+
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStore, setProducts, setTransactions, setExpenses, setStaff]);
 
   // Initialize stores on mount
   useEffect(() => {
     const initializeStores = async () => {
       try {
         const allStores = await storeService.getAllStores();
-        // Do not seed demo stores; keep empty until admin creates stores
         setStores(allStores);
       } catch (error) {
         console.error('Failed to initialize stores:', error);
@@ -175,6 +210,16 @@ const App: React.FC = () => {
     
     initializeStores();
   }, []);
+
+  // Auto-select a store (demo or first) when none is active
+  useEffect(() => {
+    if (currentStoreId || stores.length === 0) return;
+    const demoStore =
+      stores.find(store => store.code === 'DEMO_STORE') || stores[0];
+    if (demoStore) {
+      setCurrentStoreId(demoStore.id);
+    }
+  }, [stores, currentStoreId]);
 
   // Derived State
   const categories = useMemo(() => ['All', ...new Set(products.map(p => {
@@ -242,8 +287,9 @@ const App: React.FC = () => {
       const existingItem = prevCart.find(item => item.id === product.id);
       
       const newTotalQuantity = (existingItem?.quantity || 0) + quantity;
+      const hasStockLimit = isStockTrackedItem(product);
 
-      if (product.stock !== Infinity && newTotalQuantity > product.stock) {
+      if (hasStockLimit && newTotalQuantity > product.stock) {
         addToast(`Not enough stock for ${product.name}. Only ${product.stock} available.`, 'error');
         return prevCart;
       }
@@ -297,7 +343,12 @@ const App: React.FC = () => {
     setDiscountModalOpen(false);
   }
 
-  const handleConfirmCheckout = useCallback((paymentMethod: 'cash' | 'card') => {
+  const handleConfirmCheckout = useCallback(async (payment: {
+    paymentMethod: 'Cash' | 'Card';
+    tipAmount?: number;
+    tipMethod?: 'cash' | 'card' | 'gcash' | 'other';
+    allocations?: { staffId: string; amount: number }[];
+  }) => {
     if (!currentStoreId || cart.length === 0) return;
 
     const commissionTotal = cart.reduce((sum, item) => {
@@ -319,7 +370,7 @@ const App: React.FC = () => {
       discountDetails: discount,
       total: finalTotal,
       timestamp: new Date(),
-      paymentMethod: paymentMethod as 'cash' | 'card',
+      paymentMethod: payment.paymentMethod.toLowerCase() as 'cash' | 'card',
       status: 'completed',
       commissionTotal: commissionTotal > 0 ? commissionTotal : 0,
     };
@@ -346,23 +397,23 @@ const App: React.FC = () => {
     setProducts(prevProducts => {
         const newProducts = [...prevProducts];
         cart.forEach(cartItem => {
-            const itemType = (cartItem as any).itemType || 'product';
+            const itemIsService = isServiceItem(cartItem);
 
             // 1) Menu: decrement bundle children
-            if (itemType === 'menu' && Array.isArray((cartItem as any).bundleItems)) {
+            if ((cartItem as any).itemType === 'menu' && Array.isArray((cartItem as any).bundleItems)) {
               const children = (cartItem as any).bundleItems as { itemId: string; qty: number }[];
               children.forEach(child => {
                 const idx = newProducts.findIndex(p => p.id === child.itemId);
-                if (idx > -1 && newProducts[idx].stock !== Infinity) {
+                if (idx > -1 && isStockTrackedItem(newProducts[idx])) {
                   newProducts[idx].stock -= (child.qty || 1) * cartItem.quantity;
                 }
               });
             }
 
             // 2) Own stock: only products/ingredients/consumables decrement themselves
-            if (itemType !== 'service') {
+            if (!itemIsService) {
               const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
-              if(productIndex > -1 && newProducts[productIndex].stock !== Infinity) {
+              if (productIndex > -1 && isStockTrackedItem(newProducts[productIndex])) {
                   newProducts[productIndex].stock -= cartItem.quantity;
               }
             }
@@ -372,7 +423,7 @@ const App: React.FC = () => {
             if (Array.isArray(consumed)) {
               consumed.forEach(child => {
                 const idx = newProducts.findIndex(p => p.id === child.itemId);
-                if (idx > -1 && newProducts[idx].stock !== Infinity) {
+                if (idx > -1 && isStockTrackedItem(newProducts[idx])) {
                   newProducts[idx].stock -= (child.qty || 1) * cartItem.quantity;
                 }
               });
@@ -380,6 +431,20 @@ const App: React.FC = () => {
         });
         return newProducts;
     });
+
+    try {
+      if (payment.tipAmount && payment.tipAmount > 0 && currentStoreId) {
+        await recordTipForSale({
+          storeId: currentStoreId,
+          saleId: newTransaction.id,
+          totalTip: payment.tipAmount,
+          method: payment.tipMethod ?? 'cash',
+          allocations: payment.allocations ?? [],
+        });
+      }
+    } catch (tipError) {
+      console.error('Failed to record tip', tipError);
+    }
 
     handleClearCart();
     setCheckoutModalOpen(false);
@@ -652,6 +717,7 @@ const App: React.FC = () => {
           settings={settings}
           onClose={() => setCheckoutModalOpen(false)}
           onConfirm={handleConfirmCheckout}
+          staff={staff}
         />
       )}
       

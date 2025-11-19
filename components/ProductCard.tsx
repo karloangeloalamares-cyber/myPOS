@@ -1,5 +1,6 @@
 import React from 'react';
 import { Product } from '../types';
+import { isLowStock, isOutOfStock } from '@/lib/stock';
 
 interface ProductCardProps {
   product: Product;
@@ -9,8 +10,8 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onCardClick, lowStockThreshold, showExpiryBadge }) => {
-  const isOutOfStock = product.stock <= 0;
-  const isLowStock = product.stock > 0 && product.stock <= lowStockThreshold && product.stock !== Infinity;
+  const outOfStock = isOutOfStock(product);
+  const lowStock = isLowStock(product, lowStockThreshold);
   const expiryDateStr = (product as any)?.metadata?.expiryDate as string | undefined;
   let isNearExpiry = false;
   if (showExpiryBadge && expiryDateStr) {
@@ -25,18 +26,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onCardClick, lowStoc
       onClick={() => onCardClick(product)}
       aria-label={product.name}
       className={`relative group bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col transition-all duration-300 ease-in-out cursor-pointer hover:shadow-lg hover:scale-105
-        ${isOutOfStock ? 'opacity-60 grayscale' : ''}
-        ${isLowStock ? 'ring-2 ring-yellow-400' : ''}`
+        ${outOfStock ? 'opacity-60 grayscale' : ''}
+        ${lowStock ? 'ring-2 ring-yellow-400' : ''}`
       }
     >
       <div className="relative rounded-t-lg overflow-hidden">
         <img src={product.imageUrl} alt={product.name} className="w-full h-24 object-cover" />
-        {isOutOfStock && (
+        {outOfStock && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-1">
             <span className="text-white font-bold text-xs text-center bg-red-600 px-2 py-1 rounded">UNAVAILABLE</span>
           </div>
         )}
-        {isLowStock && (
+        {lowStock && (
            <div className="absolute top-1 left-1 bg-yellow-400 text-yellow-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
             LOW
           </div>
